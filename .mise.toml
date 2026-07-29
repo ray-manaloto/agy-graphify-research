@@ -61,8 +61,11 @@ description = "Automated post-task reflection: run telemetry collection, context
 depends = ["telemetry", "context", "okf"]
 
 [tasks.graphify]
-description = "Run graphify knowledge graph extraction"
-run = "~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.graph \"$@\""
+description = "Run graphify AST knowledge graph extraction"
+run = [
+  "~/.local/share/mise/installs/python/3.14.3/bin/graphify . --code-only",
+  "~/.local/share/mise/installs/python/3.14.3/bin/graphify cluster-only .",
+]
 
 [tasks.orchestrate]
 description = "Run multi-agent workflow orchestration"

@@ -16,6 +16,7 @@ dependencies = [
   "orjson>=3.9.0",
   "pytest>=8.0.0",
   "pytest-asyncio>=0.23.0",
+  "graphifyy>=0.9.30",
 ]
 
 [project.scripts]
@@ -59,6 +60,7 @@ allowed-unresolved-imports = [
   "orjson",
   "msgspec",
   "google_antigravity_sdk",
+  "graphifyy",
 ]
 
 [tool.pytest.ini_options]
