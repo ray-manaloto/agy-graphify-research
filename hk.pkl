@@ -47,6 +47,9 @@ hooks {
             ["verify-state"] {
                 check = "PYTHONPATH=src ~/.local/share/mise/installs/python/3.14.3/bin/python3 .gemini/hooks/verify_environment.py"
             }
+            ["post-task-reflection"] {
+                check = "PYTHONPATH=src ~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.telemetry"
+            }
         }
     }
     ["fix"] {

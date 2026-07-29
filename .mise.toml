@@ -48,9 +48,17 @@ run = "~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.ok
 description = "Collect conversation telemetry events into project .gemini/telemetry/"
 run = "~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.telemetry \"$@\""
 
+[tasks.context]
+description = "Monitor context token usage (<50% threshold) and evaluate subagent delegation"
+run = "~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.context_manager \"$@\""
+
 [tasks.verify]
 description = "Verify project environment state and toolchain pinning"
 run = "~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.verify"
+
+[tasks.post-task]
+description = "Automated post-task reflection: run telemetry collection, context analysis, and OKF check"
+depends = ["telemetry", "context", "okf"]
 
 [tasks.graphify]
 description = "Run graphify knowledge graph extraction"
