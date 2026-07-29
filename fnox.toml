@@ -1,0 +1,10 @@
+if_missing = "warn"
+
+[profiles.default]
+secrets = {}
+
+[profiles.dev]
+secrets = {}
+
+[profiles.ci]
+secrets = {}

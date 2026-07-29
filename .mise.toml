@@ -1,0 +1,77 @@
+[settings]
+experimental = true
+auto_install = true
+
+[env]
+PYTHONPATH = "src"
+AGY_PROJECT_MODE = "isolated"
+
+[tools]
+python = "3.14.6"
+uv = "0.12.0"
+ruff = "0.15.12"
+ty = "0.0.32"
+hk = "1.53.0"
+fnox = "1.31.1"
+pkl = "0.32.1"
+taplo = "0.10.0"
+gh = "2.96.0"
+
+[tasks.generate-models]
+description = "Generate Pydantic v2 models from schemas using datamodel-code-generator"
+run = [
+  "~/.local/share/mise/installs/pipx-datamodel-code-generator/0.71.0/bin/datamodel-codegen --input schemas/ --output src/agy_graphify/models/ --output-model-type pydantic_v2.BaseModel",
+  "~/.local/share/mise/installs/ruff/0.15.12/ruff-aarch64-apple-darwin/ruff format src/agy_graphify/models/",
+]
+
+[tasks.lint]
+description = "Lint Python codebase with ruff"
+run = "~/.local/share/mise/installs/ruff/0.15.12/ruff-aarch64-apple-darwin/ruff check ."
+
+[tasks.format]
+description = "Format Python code with ruff"
+run = "~/.local/share/mise/installs/ruff/0.15.12/ruff-aarch64-apple-darwin/ruff format ."
+
+[tasks.typecheck]
+description = "Run type analysis with ty"
+run = "~/.local/share/mise/installs/ty/0.0.32/ty-aarch64-apple-darwin/ty check ."
+
+[tasks.test]
+description = "Run async unit tests with pytest"
+run = "~/.local/share/mise/installs/python/3.14.3/bin/python3 -m pytest"
+
+[tasks.okf]
+description = "Validate documentation files against Open Knowledge Format (OKF) spec"
+run = "~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.okf docs"
+
+[tasks.telemetry]
+description = "Collect conversation telemetry events into project .gemini/telemetry/"
+run = "~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.telemetry \"$@\""
+
+[tasks.verify]
+description = "Verify project environment state and toolchain pinning"
+run = "~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.verify"
+
+[tasks.graphify]
+description = "Run graphify knowledge graph extraction"
+run = "~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.graph \"$@\""
+
+[tasks.orchestrate]
+description = "Run multi-agent workflow orchestration"
+run = "~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.orchestration \"$@\""
+
+[tasks.task]
+description = "Run flexible Python task dispatcher"
+run = "~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.tasks \"$@\""
+
+[tasks.check]
+description = "Run model generation, linting, typecheck, pytest, OKF spec validation, telemetry, and environment verification"
+depends = [
+  "generate-models",
+  "lint",
+  "typecheck",
+  "test",
+  "okf",
+  "telemetry",
+  "verify",
+]

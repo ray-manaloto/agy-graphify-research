@@ -1,0 +1,21 @@
+{
+  "name": "agy-graphify-research",
+  "version": "0.1.0",
+  "description": "Project automation plugin for Antigravity, Graphify, and Multi-Agent Orchestration",
+  "skills": [
+    "skills/graphify",
+    "skills/orchestrate",
+    "skills/verify-state",
+    "skills/verify-toolchain",
+    "skills/telemetry",
+    "skills/python-task",
+    "skills/upstashcontext7",
+    "skills/exa-mcp-server",
+    "skills/knowledge-catalog",
+    "skills/code-review",
+    "skills/last30days",
+    "skills/security",
+    "skills/ruff",
+    "skills/mise-tasks"
+  ]
+}

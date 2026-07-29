@@ -1,0 +1,22 @@
+{
+  "$schema": "https://raw.githubusercontent.com/google-gemini/gemini-cli/main/schemas/settings.schema.json",
+  "project": {
+    "name": "agy-graphify-research",
+    "description": "Research and configuration repository for Antigravity & Graphify integrations"
+  },
+  "rules": [
+    ".gemini/rules/project_isolation.md",
+    ".gemini/rules/language_standards.md",
+    ".gemini/rules/agent_guardrails.md",
+    ".gemini/rules/audit_third_party_tools.md"
+  ],
+  "hooks": {
+    "verifyState": ".gemini/hooks/verify_environment.py"
+  },
+  "tools": {
+    "useRipgrep": true
+  },
+  "experimental": {
+    "enableAgents": true
+  }
+}

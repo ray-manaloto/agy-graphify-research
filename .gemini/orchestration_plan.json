@@ -1,0 +1,28 @@
+{
+  "task": "Build multi-agent research pipeline",
+  "project": "agy-graphify-research",
+  "agents": [
+    {
+      "role": "researcher",
+      "status": "pending",
+      "subtasks": [
+        "Execute subtask for researcher"
+      ]
+    },
+    {
+      "role": "developer",
+      "status": "pending",
+      "subtasks": [
+        "Execute subtask for developer"
+      ]
+    },
+    {
+      "role": "verifier",
+      "status": "pending",
+      "subtasks": [
+        "Execute subtask for verifier"
+      ]
+    }
+  ],
+  "execution_mode": "parallel"
+}

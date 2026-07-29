@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.python-version
+
+# Virtual Environments & Build
+.venv/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Graphify Outputs
+graphify-out/
+
+# IDE & OS
+.DS_Store
+.idea/
+.vscode/
+
+# Tool Caches
+.ruff_cache/
+.ty_cache/
+.mypy_cache/
+.pytest_cache/

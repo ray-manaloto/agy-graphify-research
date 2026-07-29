@@ -1,0 +1,59 @@
+amends "package://github.com/jdx/hk/releases/download/v1.53.0/hk@1.53.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v1.53.0/hk@1.53.0#/Builtins.pkl"
+
+local linters = new Mapping<String, Step> {
+    ["ruff"] {
+        glob = "**/*.py"
+        check = "~/.local/share/mise/installs/ruff/0.15.12/ruff-aarch64-apple-darwin/ruff check {{ files }}"
+    }
+    ["ruff_format"] {
+        glob = "**/*.py"
+        check = "~/.local/share/mise/installs/ruff/0.15.12/ruff-aarch64-apple-darwin/ruff format --check {{ files }}"
+    }
+    ["taplo"] {
+        glob = "**/*.toml"
+        check = "~/.local/share/mise/shims/taplo fmt --check {{ files }}"
+    }
+    ["typos"] {
+        glob = "**/*"
+        check = "~/.local/share/mise/installs/aqua-crate-ci-typos/latest/typos {{ files }}"
+    }
+    ["check_okf"] {
+        glob = "docs/**/*.md"
+        check = "PYTHONPATH=src ~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.okf docs"
+    }
+    ["check_added_large_files"] = Builtins.check_added_large_files
+    ["check_case_conflict"] = Builtins.check_case_conflict
+    ["check_executables_have_shebangs"] = Builtins.check_executables_have_shebangs
+    ["check_merge_conflict"] = Builtins.check_merge_conflict
+    ["detect_private_key"] = Builtins.detect_private_key
+    ["trailing_whitespace"] = Builtins.trailing_whitespace
+    ["mixed_line_ending"] = Builtins.mixed_line_ending
+    ["verify"] {
+        glob = "**/*.py"
+        check = "PYTHONPATH=src ~/.local/share/mise/installs/python/3.14.3/bin/python3 .gemini/hooks/verify_environment.py"
+    }
+}
+
+hooks {
+    ["pre-commit"] {
+        fix = true
+        stash = "git"
+        steps = linters
+    }
+    ["post-commit"] {
+        steps = new Mapping<String, Step> {
+            ["verify-state"] {
+                check = "PYTHONPATH=src ~/.local/share/mise/installs/python/3.14.3/bin/python3 .gemini/hooks/verify_environment.py"
+            }
+        }
+    }
+    ["fix"] {
+        fix = true
+        stash = "git"
+        steps = linters
+    }
+    ["check"] {
+        steps = linters
+    }
+}
