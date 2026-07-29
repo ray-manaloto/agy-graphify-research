@@ -1,4 +1,4 @@
-"""Async Environment state & toolchain verifier for Antigravity/Gemini projects."""
+"""Async Environment state & toolchain verifier with session handoff generation."""
 
 import asyncio
 import json
@@ -9,7 +9,7 @@ from .models.verification_schema import Decision, VerificationResult
 
 
 class EnvironmentVerifier:
-    """Verifies project isolation, environment cleanliness, and explicit toolchain pinning."""
+    """Verifies project isolation, explicit toolchain pinning, and builds session handoff context."""
 
     def __init__(self, project_dir: Path | None = None, gemini_dir: Path | None = None) -> None:
         self.project_dir = project_dir or Path.cwd()
@@ -88,6 +88,25 @@ class EnvironmentVerifier:
 
         return violations
 
+    async def _build_handoff_context(self) -> str:
+        """Construct progressive handoff context for new sessions without context bloat."""
+        graph_report = self.project_dir / "graphify-out" / "GRAPH_REPORT.md"
+        telemetry_file = self.project_dir / ".gemini" / "telemetry" / "events.jsonl"
+
+        context_parts = [
+            "Project Isolation Verified: Tools pinned in .mise.toml without 'latest'.",
+            "Progressive Handoff Context: Read AGENTS.md for subagent delegation rules.",
+        ]
+
+        if graph_report.is_file():
+            context_parts.append("Knowledge Graph: Available in graphify-out/GRAPH_REPORT.md.")
+        if telemetry_file.is_file():
+            context_parts.append(
+                "Telemetry: Event logs recorded in .gemini/telemetry/events.jsonl."
+            )
+
+        return " | ".join(context_parts)
+
     async def run_check(self) -> VerificationResult:
         globals_v = await self._check_globals()
         settings_v = await self._check_global_settings()
@@ -104,13 +123,11 @@ class EnvironmentVerifier:
                 reason=reason_msg,
             )
 
+        handoff_ctx = await self._build_handoff_context()
         logger.info("Project state and toolchain verification passed successfully.")
         return VerificationResult(
             decision=Decision.allow,
-            additionalContext=(
-                "Project isolation verified: All plugins, skills, rules, settings, and "
-                "explicit toolchain versions strictly originate from this project."
-            ),
+            additionalContext=handoff_ctx,
         )
 
     async def verify_and_output(self) -> int:
