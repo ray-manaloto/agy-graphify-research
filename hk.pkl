@@ -2,6 +2,7 @@ amends "package://github.com/jdx/hk/releases/download/v1.53.0/hk@1.53.0#/Config.
 import "package://github.com/jdx/hk/releases/download/v1.53.0/hk@1.53.0#/Builtins.pkl"
 
 local linters = new Mapping<String, Step> {
+    ["no_commit_to_branch"] = Builtins.no_commit_to_branch
     ["ruff"] {
         glob = "**/*.py"
         check = "~/.local/share/mise/installs/ruff/0.15.12/ruff-aarch64-apple-darwin/ruff check {{ files }}"
@@ -45,6 +46,9 @@ hooks {
         steps = new Mapping<String, Step> {
             ["verify-state"] {
                 check = "PYTHONPATH=src ~/.local/share/mise/installs/python/3.14.3/bin/python3 .gemini/hooks/verify_environment.py"
+            }
+            ["post-task-reflection"] {
+                check = "PYTHONPATH=src ~/.local/share/mise/installs/python/3.14.3/bin/python3 -m agy_graphify.telemetry"
             }
         }
     }

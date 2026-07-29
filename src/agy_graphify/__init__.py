@@ -1,5 +1,6 @@
 """agy_graphify - Python library for Antigravity, Graphify, and Multi-Agent Orchestration."""
 
+from .context_manager import ContextManagerEngine
 from .graph import GraphifyEngine
 from .okf import OKFValidator
 from .orchestration import OrchestrationEngine
@@ -9,6 +10,7 @@ from .telemetry import TelemetryCollector
 from .verify import EnvironmentVerifier
 
 __all__ = [
+    "ContextManagerEngine",
     "EnvironmentVerifier",
     "GraphifyEngine",
     "OKFValidator",
