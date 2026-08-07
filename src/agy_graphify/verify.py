@@ -78,6 +78,8 @@ class EnvironmentVerifier:
         self.project_dir = project_dir or Path.cwd()
         self.gemini_dir = gemini_dir or (Path.home() / ".gemini")
         self.integrity_auditor = IntegrityAuditor(self.project_dir)
+        self._cached_result: VerificationResult | None = None
+        self._cached_timestamp: float = 0.0
 
     async def _check_globals(self) -> list[str]:
         violations: list[str] = []
@@ -257,7 +259,14 @@ class EnvironmentVerifier:
             )
         return violations
 
-    async def run_check(self) -> VerificationResult:
+    async def run_check(self, use_cache: bool = True, cache_ttl: float = 60.0) -> VerificationResult:
+        import time
+
+        if use_cache and self._cached_result is not None:
+            if (time.time() - self._cached_timestamp) < cache_ttl:
+                logger.debug("Reusing cached EnvironmentVerifier VerificationResult")
+                return self._cached_result
+
         globals_v = await self._check_globals()
         settings_v = await self._check_global_settings()
         rules_v = await self._check_project_guardrails()
@@ -297,20 +306,26 @@ class EnvironmentVerifier:
         if violations:
             reason_msg = "State verification failed: " + "; ".join(violations)
             logger.warning(reason_msg)
-            return VerificationResult(
+            res = VerificationResult(
                 decision=Decision.deny,
                 reason=reason_msg,
             )
+            self._cached_result = res
+            self._cached_timestamp = time.time()
+            return res
 
         api_statuses = [*pypi_status, *github_status]
         handoff_ctx = await self._build_handoff_context(api_statuses=api_statuses)
         logger.info(
             "Project state, live API checks, and toolchain verification passed successfully."
         )
-        return VerificationResult(
+        res = VerificationResult(
             decision=Decision.allow,
             additionalContext=handoff_ctx,
         )
+        self._cached_result = res
+        self._cached_timestamp = time.time()
+        return res
 
     async def verify_and_output(self) -> int:
         result = await self.run_check()

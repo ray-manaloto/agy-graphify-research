@@ -79,6 +79,7 @@ class StateGraphEngine:
         self.state_file = self.project_dir / ".gemini" / "graph_state.json"
         self._lock = asyncio.Lock()
         self.dispatcher = dispatcher or EventDispatcher()
+        self._verifier: Any | None = None
 
     def _create_event(
         self,
@@ -473,8 +474,10 @@ class StateGraphEngine:
             )
             return
 
-        verifier = EnvironmentVerifier(project_dir=self.project_dir)
-        result = await verifier.run_check()
+        if self._verifier is None:
+            self._verifier = EnvironmentVerifier(project_dir=self.project_dir)
+
+        result = await self._verifier.run_check(use_cache=True)
         if result.decision.value != "allow":
             msg = f"Automated node verification failed at node '{node.id}': {result.reason}"
             logger.error(msg)
@@ -490,8 +493,10 @@ class StateGraphEngine:
             )
             return True
 
-        verifier = EnvironmentVerifier(project_dir=self.project_dir)
-        result = await verifier.run_check()
+        if self._verifier is None:
+            self._verifier = EnvironmentVerifier(project_dir=self.project_dir)
+
+        result = await self._verifier.run_check(use_cache=True)
         if result.decision.value != "allow":
             logger.error(f"Final verification gate denied workflow completion: {result.reason}")
             return False
