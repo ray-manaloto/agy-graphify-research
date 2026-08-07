@@ -66,6 +66,9 @@ class EventDispatcher:
                 logger.error(f"[EventDispatcher] Listener error for {event_name}: {exc}")
 
 
+import fcntl
+
+
 class StateGraphEngine:
     """Manages Sol-Orchestrator inspired DAG graph state, node dependencies, event dispatching, and atomic checkpointing."""
 
@@ -188,25 +191,32 @@ class StateGraphEngine:
         return expanded
 
     async def save_state_atomic(self, schema: GraphEngineSchema) -> None:
-        """Atomically serialize state to .gemini/graph_state.json using asyncio.Lock and tempfile replace."""
+        """Atomically serialize state to .gemini/graph_state.json using asyncio.Lock, POSIX fcntl.flock, and tempfile replace."""
         async with self._lock:
             self.state_file.parent.mkdir(parents=True, exist_ok=True)
             data_json = schema.model_dump_json(indent=2)
-            with tempfile.NamedTemporaryFile(
-                "w", dir=self.state_file.parent, delete=False, encoding="utf-8"
-            ) as tmp:
-                tmp.write(data_json)
-                tmp_name = tmp.name
+            lock_file_path = self.state_file.with_suffix(".json.lock")
+            with open(lock_file_path, "a+", encoding="utf-8") as lock_file:
+                try:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                    with tempfile.NamedTemporaryFile(
+                        "w", dir=self.state_file.parent, delete=False, encoding="utf-8"
+                    ) as tmp:
+                        tmp.write(data_json)
+                        tmp_name = tmp.name
+                    os.replace(tmp_name, self.state_file)
+                    logger.debug(f"Saved atomic graph state to {self.state_file}")
+                finally:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
-            os.replace(tmp_name, self.state_file)
-            logger.debug(f"Saved atomic graph state to {self.state_file}")
-
-    async def load_state_cold_start(self, graph_id: str = "default_graph") -> GraphEngineSchema:
-        """Load state from .gemini/graph_state.json with cold-start resilience."""
+    async def load_state_cold_start(
+        self, graph_id: str = "default_graph", reset_failed: bool = True
+    ) -> GraphEngineSchema:
+        """Load state from .gemini/graph_state.json with cold-start resilience and POSIX fcntl.flock read locking."""
         async with self._lock:
             if not self.state_file.is_file():
                 logger.info(f"Cold-start: Initializing new GraphEngineSchema for '{graph_id}'")
-                empty_schema = GraphEngineSchema(
+                return GraphEngineSchema(
                     graph_id=graph_id,
                     execution_mode=ExecutionMode.dag,
                     status=Status.pending,
@@ -214,11 +224,36 @@ class StateGraphEngine:
                     max_remediations=3,
                     nodes=[],
                 )
-                return empty_schema
 
             try:
-                content = self.state_file.read_text(encoding="utf-8")
-                return GraphEngineSchema.model_validate_json(content)
+                lock_file_path = self.state_file.with_suffix(".json.lock")
+                lock_file_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(lock_file_path, "a+", encoding="utf-8") as lock_file:
+                    try:
+                        fcntl.flock(lock_file.fileno(), fcntl.LOCK_SH)
+                        content = self.state_file.read_text(encoding="utf-8")
+                    finally:
+                        fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+                schema = GraphEngineSchema.model_validate_json(content)
+                if reset_failed:
+                    failed_ids = {n.id for n in schema.nodes if n.status == Status1.failed}
+                    if failed_ids:
+                        logger.info(
+                            f"Rehydrating state: resetting failed nodes {failed_ids} and dependent skipped nodes to pending."
+                        )
+                        for n in schema.nodes:
+                            if n.status == Status1.failed:
+                                n.status = Status1.pending
+                                n.error_message = None
+                            elif (
+                                n.status == Status1.skipped
+                                and n.dependencies
+                                and any(dep in failed_ids for dep in n.dependencies)
+                            ):
+                                n.status = Status1.pending
+                                n.error_message = None
+                return schema
             except Exception as err:
                 logger.warning(
                     f"Could not parse state file {self.state_file}: {err}. Resetting state."
@@ -253,12 +288,17 @@ class StateGraphEngine:
         for node_id in topo_order:
             node = node_map[node_id]
 
+            if node.status == Status1.completed:
+                logger.debug(f"Node '{node.id}' already completed. Skipping during state resume.")
+                continue
+
             # Check dependency statuses
             if node.dependencies:
                 dep_statuses = [node_map[dep].status for dep in node.dependencies]
-                if any(st == Status1.failed for st in dep_statuses):
+                if any(st in (Status1.failed, Status1.skipped) for st in dep_statuses):
                     node.status = Status1.skipped
-                    node.error_message = "Skipped due to failed dependency"
+                    node.error_message = "Skipped due to failed or skipped dependency"
+                    await self.save_state_atomic(schema)
                     await self.dispatcher.dispatch(
                         self._create_event(
                             schema.graph_id,
@@ -316,26 +356,55 @@ class StateGraphEngine:
                         await handler(node)
                     else:
                         handler(node)
+                    if node.status == Status1.running:
+                        node.status = Status1.completed
                 elif "pypi" in node.id.lower():
                     await self._execute_pypi_version_check_node(node)
+                    node.status = Status1.completed
                 elif "github" in node.id.lower():
                     await self._execute_github_version_check_node(node)
+                    node.status = Status1.completed
                 elif node.node_type == NodeType.evaluator or node.subagent_role in (
+                    "research",
+                    "developer",
                     "verifier",
                     "qa_reviewer",
                 ):
                     await self._run_automated_node_verification(node)
+                    node.status = Status1.completed
+                else:
+                    node.status = Status1.completed
 
-                node.status = Status1.completed
-                await self.dispatcher.dispatch(
-                    self._create_event(schema.graph_id, EventType.NODE_COMPLETED, node_id=node.id)
-                )
+                if node.status == Status1.pending_subagent_dispatch:
+                    msg = f"Task node '{node.id}' requires subagent role '{node.subagent_role}' dispatch."
+                    logger.info(msg)
+                    await self.dispatcher.dispatch(
+                        self._create_event(
+                            schema.graph_id,
+                            EventType.NODE_PENDING_SUBAGENT,
+                            node_id=node.id,
+                            payload={
+                                "subagent_role": node.subagent_role,
+                                "task_action": node.task_action,
+                            },
+                        )
+                    )
+
+                await self.save_state_atomic(schema)
+
+                if node.status == Status1.completed:
+                    await self.dispatcher.dispatch(
+                        self._create_event(
+                            schema.graph_id, EventType.NODE_COMPLETED, node_id=node.id
+                        )
+                    )
             except Exception as exc:
                 if isinstance(exc, MaxRemediationExceededError):
                     raise
                 logger.error(f"Node '{node.id}' failed: {exc}")
                 node.status = Status1.failed
                 node.error_message = str(exc)
+                await self.save_state_atomic(schema)
                 await self.dispatcher.dispatch(
                     self._create_event(
                         schema.graph_id,
@@ -347,14 +416,23 @@ class StateGraphEngine:
 
         schema.remediation_count = remediation_count
         failed_count = sum(1 for n in schema.nodes if n.status == Status1.failed)
+        skipped_count = sum(1 for n in schema.nodes if n.status == Status1.skipped)
+        pending_dispatch_count = sum(
+            1 for n in schema.nodes if n.status == Status1.pending_subagent_dispatch
+        )
 
         # Mandatory Final Verification Gate
-        if failed_count == 0:
+        if failed_count == 0 and skipped_count == 0 and pending_dispatch_count == 0:
             final_result = await self._run_final_verification_gate()
             if not final_result:
                 failed_count += 1
 
-        schema.status = Status.failed if failed_count > 0 else Status.completed
+        if failed_count > 0 or skipped_count > 0:
+            schema.status = Status.failed
+        elif pending_dispatch_count > 0:
+            schema.status = Status.running
+        else:
+            schema.status = Status.completed
 
         await self.save_state_atomic(schema)
 
@@ -362,7 +440,7 @@ class StateGraphEngine:
             await self.dispatcher.dispatch(
                 self._create_event(schema.graph_id, EventType.WORKFLOW_COMPLETED)
             )
-        else:
+        elif schema.status == Status.failed:
             await self.dispatcher.dispatch(
                 self._create_event(schema.graph_id, EventType.WORKFLOW_FAILED)
             )
