@@ -12,8 +12,11 @@ description: Execute multi-agent state graph workflows (DAG) for complex tasks, 
 2. **Execute Multi-Agent Subtasks**:
    - For each DAG node in topological order:
      - Invoke dedicated subagents (`research`, `developer`, `verifier`, `qa_reviewer`) according to node roles.
+     - Handle task nodes marked `pending_subagent_dispatch` by dispatching subagents or registered handlers.
+     - Enforce cascading skip guard (skip downstream nodes if any dependency is `failed` or `skipped`).
+     - Reuse cached verifier instance (`EnvironmentVerifier.run_check(use_cache=True)`) to maintain <3s DAG execution performance.
      - Record OpenTelemetry span traces to `.gemini/telemetry/`.
-     - Atomically update `.gemini/graph_state.json` upon node completion.
+     - Atomically update `.gemini/graph_state.json` under POSIX `fcntl.flock` file locking.
 
 3. **Verify & Audit**:
    - Run `uv run agy-verify` to ensure zero `.sh` shell script violations and clean environment state.
