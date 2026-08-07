@@ -5,6 +5,7 @@ import ast
 import asyncio
 import inspect
 import json
+import os
 import re
 import sys
 from collections.abc import Awaitable, Callable
@@ -638,41 +639,43 @@ async def async_main() -> None:
         title = f"{prefix}({scope}): {raw_title}"
         logger.info(f"Rebasing onto main and creating clean feature branch '{branch}'...")
 
+        env = {**os.environ, "ALLOW_MAIN_COMMIT": "1"}
+
         # Clean up stale rebase if left in broken state
         if (Path.cwd() / ".git" / "rebase-merge").exists() or (Path.cwd() / ".git" / "rebase-apply").exists():
-            await (await asyncio.create_subprocess_exec("git", "rebase", "--abort")).wait()
+            await (await asyncio.create_subprocess_exec("git", "rebase", "--abort", env=env)).wait()
 
         # Create/checkout feature branch first to preserve unstaged changes
-        await (await asyncio.create_subprocess_exec("git", "checkout", "-B", branch)).wait()
-        await (await asyncio.create_subprocess_exec("git", "add", "-A")).wait()
+        await (await asyncio.create_subprocess_exec("git", "checkout", "-B", branch, env=env)).wait()
+        await (await asyncio.create_subprocess_exec("git", "add", "-A", env=env)).wait()
 
         # Check git status before committing
         st_proc = await asyncio.create_subprocess_exec(
-            "git", "status", "--porcelain", stdout=asyncio.subprocess.PIPE
+            "git", "status", "--porcelain", stdout=asyncio.subprocess.PIPE, env=env
         )
         st_out, _ = await st_proc.communicate()
         if st_out.strip():
-            p_cm = await asyncio.create_subprocess_exec("git", "commit", "-m", title)
+            p_cm = await asyncio.create_subprocess_exec("git", "commit", "-m", title, env=env)
             await p_cm.wait()
 
         # Rebase feature branch onto origin/main
-        await (await asyncio.create_subprocess_exec("git", "fetch", "origin", "main")).wait()
-        await (await asyncio.create_subprocess_exec("git", "rebase", "origin/main")).wait()
+        await (await asyncio.create_subprocess_exec("git", "fetch", "origin", "main", env=env)).wait()
+        await (await asyncio.create_subprocess_exec("git", "rebase", "origin/main", env=env)).wait()
 
         p_push = await asyncio.create_subprocess_exec(
-            "git", "push", "-u", "origin", branch, "--force-with-lease"
+            "git", "push", "-u", "origin", branch, "--force-with-lease", env=env
         )
         await p_push.wait()
 
-        p_pr = await asyncio.create_subprocess_exec("gh", "pr", "create", "--fill", "--head", branch)
+        p_pr = await asyncio.create_subprocess_exec("gh", "pr", "create", "--fill", "--head", branch, env=env)
         await p_pr.wait()
 
-        p_m = await asyncio.create_subprocess_exec("gh", "pr", "merge", branch, "--squash", "--delete-branch")
+        p_m = await asyncio.create_subprocess_exec("gh", "pr", "merge", branch, "--squash", "--delete-branch", env=env)
         await p_m.wait()
 
-        await (await asyncio.create_subprocess_exec("git", "checkout", "main")).wait()
-        await (await asyncio.create_subprocess_exec("git", "pull", "--rebase", "origin", "main")).wait()
-        await (await asyncio.create_subprocess_exec("git", "branch", "-D", branch)).wait()
+        await (await asyncio.create_subprocess_exec("git", "checkout", "main", env=env)).wait()
+        await (await asyncio.create_subprocess_exec("git", "pull", "--rebase", "origin", "main", env=env)).wait()
+        await (await asyncio.create_subprocess_exec("git", "branch", "-D", branch, env=env)).wait()
 
         logger.info(
             f"PR '{branch}' created, merged to remote main, local main rebased, and feature branch deleted cleanly."

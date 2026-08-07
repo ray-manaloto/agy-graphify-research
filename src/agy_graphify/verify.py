@@ -263,26 +263,42 @@ class EnvironmentVerifier:
         violations: list[str] = []
         import os
         import subprocess
+
         allow_main = os.environ.get("ALLOW_MAIN_COMMIT")
         if allow_main == "1":
             logger.warning("ALLOW_MAIN_COMMIT=1 is active: Branch protection bypassed.")
         else:
             try:
-                branch = subprocess.check_output(["git", "branch", "--show-current"], cwd=self.project_dir, text=True, stderr=subprocess.DEVNULL).strip()
-                if branch == "main":
-                    violations.append("Direct commit to main branch is prohibited without ALLOW_MAIN_COMMIT=1 override.")
-                elif not branch:
-                    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.project_dir, text=True, stderr=subprocess.DEVNULL).strip()
-                    main_sha = subprocess.check_output(["git", "rev-parse", "main"], cwd=self.project_dir, text=True, stderr=subprocess.DEVNULL).strip()
-                    if head == main_sha:
-                        violations.append("Direct commit to main branch is prohibited without ALLOW_MAIN_COMMIT=1 override.")
+                branch = subprocess.check_output(
+                    ["git", "branch", "--show-current"],
+                    cwd=self.project_dir,
+                    text=True,
+                    stderr=subprocess.DEVNULL,
+                ).strip()
+                head = subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"],
+                    cwd=self.project_dir,
+                    text=True,
+                    stderr=subprocess.DEVNULL,
+                ).strip()
+                main_sha = subprocess.check_output(
+                    ["git", "rev-parse", "main"],
+                    cwd=self.project_dir,
+                    text=True,
+                    stderr=subprocess.DEVNULL,
+                ).strip()
+
+                if branch == "main" or (head and main_sha and head == main_sha):
+                    violations.append(
+                        "Direct commit to main branch is prohibited without ALLOW_MAIN_COMMIT=1 override."
+                    )
             except subprocess.CalledProcessError:
                 pass
-        
+
         hook_path = self.project_dir / ".git" / "hooks" / "pre-commit"
         if (self.project_dir / ".git").exists():
             hook_path.parent.mkdir(parents=True, exist_ok=True)
-            hook_content = "#!/bin/sh\nuv run agy-verify\n"
+            hook_content = "#!/bin/sh\nexec uv run agy-verify\n"
             if not hook_path.exists() or hook_path.read_text() != hook_content:
                 hook_path.write_text(hook_content)
                 hook_path.chmod(0o755)
