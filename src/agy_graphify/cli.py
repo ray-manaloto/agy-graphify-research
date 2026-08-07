@@ -5,7 +5,9 @@ import asyncio
 import sys
 
 from .graph import async_main as graph_main
+from .graph_engine import async_main as graph_engine_main
 from .orchestration import async_main as orchestrate_main
+from .skillopt import async_main as skillopt_main
 from .tasks import async_main as tasks_main
 from .verify import EnvironmentVerifier
 
@@ -19,6 +21,8 @@ async def async_cli_main() -> None:
     subparsers.add_parser("verify", help="Verify project state and isolation")
     subparsers.add_parser("graphify", help="Run knowledge graph extraction & query")
     subparsers.add_parser("orchestrate", help="Run multi-agent workflow orchestration")
+    subparsers.add_parser("graph-engine", help="Run Sol-Orchestrator state graph engine")
+    subparsers.add_parser("skillopt", help="Run Microsoft SkillOpt prompt optimization")
     subparsers.add_parser("task", help="Execute flexible task dispatcher")
 
     args, remaining = parser.parse_known_args()
@@ -30,6 +34,10 @@ async def async_cli_main() -> None:
         await graph_main(*remaining)
     elif args.command == "orchestrate":
         await orchestrate_main(*remaining)
+    elif args.command == "graph-engine":
+        await graph_engine_main(*remaining)
+    elif args.command == "skillopt":
+        await skillopt_main(*remaining)
     elif args.command == "task":
         await tasks_main()
     else:

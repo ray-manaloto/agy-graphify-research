@@ -9,7 +9,10 @@ This document outlines the roles, responsibilities, execution rules, and progres
 | **Coordinator / Planner** | `main` | `pro` / `inherit` | High-level planning, user communication, and orchestration. |
 | **Code Base Researcher** | `research` | `flash` | Directory exploration, codebase searching, and dependency inspection. |
 | **Schema & Model Builder** | `self` / `developer` | `flash` | Modifying `schemas/` and generating Pydantic V2 models via `datamodel-code-generator`. |
-| **Verifier & Reviewer** | `self` / `verifier` | `flash_lite` | Running `mise run check`, `hk check`, and validating OKF doc compliance. |
+| **Verifier & Reviewer** | `self` / `verifier` | `flash_lite` | Running `mise run check`, `hk check`, and validating code consistency. |
+| **QA & Adversarial Reviewer** | `self` / `qa_reviewer` | `pro` | Edge-case analysis, hardware stress testing, and adversarial plan review. |
+| **OKF Compliance Specialist** | `self` / `okf_specialist` | `flash` | Validating Open Knowledge Format schemas, frontmatter, and doc generators. |
+| **Self-Healing & Learning Specialist** | `self` / `learning_agent` | `flash` | Analyzing telemetry traces & failed tool calls, emitting remediation rules & LESSONS.md. |
 
 ---
 
@@ -36,3 +39,20 @@ When ending a session or completing a major task:
 1. Run `mise run post-task` to log conversation telemetry into `.gemini/telemetry/`.
 2. Update `.gemini/orchestration_plan.json` with completed and remaining tasks.
 3. Next session startup hook automatically parses telemetry and state to supply progressive handoff context.
+
+---
+
+## 5. Strict Execution & Tooling Guardrails
+
+- **Mandatory `uv run` Tooling**: All commands, tests, and tasks MUST be executed through `uv run` via `.mise.toml` task wrappers backed by `pyproject.toml` entrypoints.
+- **Zero Shell Script Policy (`*.sh` Ban)**: Shell scripts (`*.sh`) are strictly prohibited in the codebase (outside vendor/3rd-party repositories). Enforcement is strictly checked by `hk.pkl` (`no_shell_scripts` linter), `src/agy_graphify/verify.py` (`EnvironmentVerifier`), and git pre-commit hooks.
+- **Python Library-First Architecture**: All tasks, graph execution engines, telemetry loops, and plugins must be written in Python inside `src/agy_graphify/` and exposed via `pyproject.toml` script entrypoints.
+
+---
+
+## 6. Manifest Binding & State Graph Preservation Invariant
+
+- **Target Manifest Binding**: Whenever generating or resuming a StateGraphEngine DAG (`.gemini/graph_state.json`), the target source manifest (`config/sources.json` or `extended_repo_manifest.json`) MUST be explicitly bound to the graph state.
+- **100% Repository Representation Verification**: Bounding checks MUST verify that 100% of all registered repositories in `config/sources.json` are present in `graphify-out/graph.json` before marking any DAG ingestion milestone as `completed`.
+
+

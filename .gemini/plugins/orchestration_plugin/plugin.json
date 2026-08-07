@@ -1,0 +1,15 @@
+{
+  "name": "orchestration_plugin",
+  "version": "1.0.0",
+  "description": "Antigravity Multi-Agent Orchestration Graph Engine & SkillOpt Self-Learning Plugin",
+  "author": "agy-graphify-research",
+  "entrypoints": {
+    "graph_engine": "uv run agy-graph-engine",
+    "skillopt": "uv run agy-skillopt",
+    "orchestration": "uv run agy-orchestrate"
+  },
+  "skills": [
+    "orchestration-harness",
+    "last30days"
+  ]
+}

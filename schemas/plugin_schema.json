@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PluginSchema",
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "version": { "type": "string" },
+    "description": { "type": "string" },
+    "author": { "type": "string" },
+    "entrypoints": {
+      "type": "object",
+      "properties": {
+        "graph_engine": { "type": "string" },
+        "skillopt": { "type": "string" },
+        "orchestration": { "type": "string" }
+      }
+    },
+    "skills": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["name", "version", "description", "entrypoints"]
+}

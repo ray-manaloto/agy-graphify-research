@@ -1,0 +1,40 @@
+# OpenAI Symphony Declarative Workflow Spec for Colibri MoE Benchmarking Campaign
+name: colibri_moe_benchmark_workflow
+version: 1.0.0
+description: Autonomous multi-agent benchmarking campaign for Colibri MoE engine (Apple Silicon M2 Max Metal Compute & Direct I/O).
+execution_mode: dag
+max_remediations: 3
+
+nodes:
+  - id: plan_benchmark
+    node_type: task
+    role: coordinator
+    instructions: Define benchmarking parameters, tensor cache configurations, and hardware monitoring profiles for Colibri MoE.
+
+  - id: inspect_metal_shaders
+    node_type: task
+    role: researcher
+    instructions: Inspect Metal compute shaders and OpenMP Direct I/O block streaming in scratch/colibri/repo/c/ using Tree-Sitter AST graphs.
+    dependencies:
+      - plan_benchmark
+
+  - id: execute_benchmark_suite
+    node_type: task
+    role: developer
+    instructions: Execute token generation throughput and TTFT latency benchmark matrix under varying expert cache allocations.
+    dependencies:
+      - inspect_metal_shaders
+
+  - id: verify_telemetry_spans
+    node_type: task
+    role: verifier
+    instructions: Audit OTEL spans in Arize Phoenix and verify causal DAG hash chain integrity in .gemini/telemetry/causal_events.jsonl.
+    dependencies:
+      - execute_benchmark_suite
+
+  - id: qa_adversarial_review
+    node_type: task
+    role: qa_reviewer
+    instructions: Conduct adversarial stress test review under memory pressure and issue victory audit verdict.
+    dependencies:
+      - verify_telemetry_spans

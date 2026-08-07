@@ -8,12 +8,23 @@ dist/
 build/
 *.egg-info/
 
-# Gemini / Antigravity Dynamic Output
+# Gemini / Antigravity Dynamic Output & State
 .gemini/telemetry/
 .gemini/orchestration_plan.json
+.gemini/commit_state.json
+.gemini/graph_state.json
 graphify-out/
+graphify-out-antigravity/
+
+# Cloned Sources & Vendor Repositories (Fetchable via tasks)
+repos/
+vendor/
+scratch/
+.artifacts/
+site/
 
 # Cache directories
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+

@@ -28,19 +28,52 @@ class OKFValidator:
             issues.append(f"{file_path.name}: Malformed YAML frontmatter")
             return issues
 
-        frontmatter = parts[1]
-        required_keys = ["title", "doc_id", "version", "type"]
-        missing_keys = [
-            f"{file_path.name}: Missing required OKF frontmatter field '{key}'"
-            for key in required_keys
-            if f"{key}:" not in frontmatter
-        ]
-        issues.extend(missing_keys)
+        # Differentiate Antigravity SKILL.md from standard OKF Markdown docs
+        if file_path.name == "SKILL.md":
+            import yaml
 
-        body = parts[2]
-        if "## Overview" not in body and "## Context" not in body:
+            raw_yaml = yaml.safe_load(parts[1]) or {}
+            if "name" not in raw_yaml or "description" not in raw_yaml:
+                issues.append(
+                    f"{file_path.name}: Missing required skill frontmatter field 'name' or 'description'"
+                )
+            return issues
+
+        try:
+            import yaml
+            from pydantic import ValidationError
+
+            from .models.okf_schema import OKFFrontmatter
+
+            raw_yaml = yaml.safe_load(parts[1]) or {}
+            OKFFrontmatter.model_validate(raw_yaml)
+        except ImportError:
+            # Fallback if PyYAML not installed in local environment
+            frontmatter_str = parts[1]
+            required_keys = ["title", "doc_id", "version", "type"]
+            for key in required_keys:
+                if f"{key}:" not in frontmatter_str:
+                    issues.append(
+                        f"{file_path.name}: Missing required OKF frontmatter field '{key}'"
+                    )
+        except ValidationError as exc:
+            for err in exc.errors():
+                loc = ".".join(str(l) for l in err["loc"])
+                issues.append(
+                    f"{file_path.name}: Frontmatter validation error in '{loc}': {err['msg']}"
+                )
+
+        body = parts[2].strip()
+        if not body:
+            issues.append(f"{file_path.name}: OKF document body is empty")
+
+        if (
+            "## Overview" not in body
+            and "## Context" not in body
+            and "## Learned Remediation Rules" not in body
+        ):
             issues.append(
-                f"{file_path.name}: Missing required section '## Overview' or '## Context'"
+                f"{file_path.name}: Missing required section '## Overview', '## Context', or '## Learned Remediation Rules'"
             )
 
         return issues
@@ -56,6 +89,11 @@ class OKFValidator:
         for file_path in target.glob("**/*.md"):
             issues = await self.validate_file(file_path)
             all_issues.extend(issues)
+
+        # Check LESSONS.md if present at project root
+        lessons = self.target_dir / "LESSONS.md"
+        if lessons.is_file():
+            all_issues.extend(await self.validate_file(lessons))
 
         if all_issues:
             msg = "OKF documentation validation failed: " + "; ".join(all_issues)
@@ -74,7 +112,7 @@ async def async_main(*params: str) -> None:
     parser = argparse.ArgumentParser(description="Open Knowledge Format (OKF) Spec Validator")
     parser.add_argument("path", nargs="?", default="docs", help="Path to docs directory")
 
-    args = parser.parse_args(list(params) if params else None)
+    args = parser.parse_args(list(params) if params else [])
 
     validator = OKFValidator()
     result = await validator.validate_all(docs_dir=Path(args.path))

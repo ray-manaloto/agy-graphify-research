@@ -24,6 +24,18 @@ Establishes coding conventions, language constraints, linting parameters, and sc
 - **Linting & Formatting**: Ruff ALL rules (`select = ["ALL"]`) and Ty strict typing configured in `pyproject.toml`.
 - **Tooling**: All tools explicitly pinned in `.mise.toml` without `"latest"`.
 
+## Verification & Code Quality Pipeline
+
+```mermaid
+flowchart TD
+    Schemas[schemas/*.json] --> DM[datamodel-code-generator]
+    DM --> Models[src/agy_graphify/models/*.py]
+    Models --> Ruff[Ruff Linter / select ALL]
+    Models --> Ty[Ty Type Checker]
+    Ruff --> Check[mise run check / hk check]
+    Ty --> Check
+```
+
 ## Relationships & References
 
 - Enforced locally via `hk check` and `mise run check`.

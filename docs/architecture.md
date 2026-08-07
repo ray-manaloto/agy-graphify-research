@@ -22,6 +22,20 @@ tags:
 - **Async Python Library**: Core business logic, knowledge graph extraction (`GraphifyEngine`), multi-agent workflow dispatcher (`OrchestrationEngine`), and environment verifier (`EnvironmentVerifier`).
 - **Toolchain Pinning**: Pinned tools (`python 3.14.6`, `uv`, `ruff`, `ty`, `hk`, `fnox`, `pkl`) in `.mise.toml`.
 
+## System Flowchart Architecture
+
+```mermaid
+flowchart TD
+    CLI[Antigravity CLI / agy] --> Dispatcher[TaskDispatcher / tasks.py]
+    Dispatcher --> GE[GraphifyEngine / graph.py]
+    Dispatcher --> SE[StateGraphEngine / graph_engine.py]
+    Dispatcher --> EV[EnvironmentVerifier / verify.py]
+    Dispatcher --> OKF[OKFValidator / okf.py]
+    GE --> Out[graphify-out/ JSON & MD]
+    SE --> State[.gemini/graph_state.json]
+    OKF --> Docs[docs/ OKF Compliance]
+```
+
 ## Relationships & References
 
 - **Mise Task Wrappers**: All skills invoke `mise run <task>` commands.

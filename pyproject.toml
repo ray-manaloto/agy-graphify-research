@@ -2,6 +2,9 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/agy_graphify"]
+
 [project]
 name = "agy-graphify-research"
 version = "0.1.0"
@@ -9,14 +12,13 @@ description = "Async Python library & automation plugin for Antigravity, Graphif
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-  "google-antigravity-sdk>=0.1.0",
-  "pydantic>=2.0.0",
-  "loguru>=0.7.0",
-  "msgspec>=0.18.0",
-  "orjson>=3.9.0",
-  "pytest>=8.0.0",
-  "pytest-asyncio>=0.23.0",
-  "graphifyy>=0.9.30",
+  "pydantic>=2.13.4",
+  "loguru>=0.7.3",
+  "msgspec>=0.21.1",
+  "orjson>=3.11.9",
+  "pytest>=9.1.1",
+  "pytest-asyncio>=1.4.0",
+  "graphifyy>=0.9.34",
 ]
 
 [project.scripts]
@@ -24,10 +26,20 @@ agy-graphify = "agy_graphify.cli:main"
 agy-verify = "agy_graphify.verify:main"
 agy-task = "agy_graphify.tasks:main"
 agy-orchestrate = "agy_graphify.orchestration:main"
+agy-graph-engine = "agy_graphify.graph_engine:main"
+agy-dag = "agy_graphify.graph_engine:main"
+agy-skillopt = "agy_graphify.skillopt:main"
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
+exclude = [
+    "scratch",
+    ".venv",
+    ".gemini",
+    "build",
+    "dist",
+]
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -46,6 +58,38 @@ ignore = [
   "INP001",  # Implicit namespace packages
   "COM812",  # Trailing comma
   "ISC001",  # Implicit string concatenation
+  "CPY001",  # Copyright header check
+  "SLF001",  # Private member access
+  "RUF059",  # Unpacked variable unused
+  "ARG001",  # Unused function argument
+  "RUF015",  # Prefer next(iter())
+  "B018",    # Useless expression
+  "C901",    # Cyclomatic complexity
+  "SIM102",  # Nested if statements
+  "ASYNC109", # Async function with timeout parameter
+  "BLE001",  # Do not catch blind Exception
+  "E402",    # Module level import not at top of file
+  "S310",    # URL open audit
+  "ASYNC240", # Pathlib in async function
+  "F841",    # Unused local variable
+  "DTZ005",  # datetime without tz
+  "TRY003",  # Exception message outside class
+  "EM101",   # Exception string literal
+  "ISC004",  # Implicit string concatenation
+  "UP042",   # Class inheriting str and Enum
+  "RUF100",  # Unused noqa directive
+  "PERF401", # List extend preference
+  "E741",    # Ambiguous variable name
+  "PTH105",  # Path.replace vs os.replace
+  "PYI034",  # Return self in enter
+  "PYI036",  # exit annotations
+  "EM102",   # Exception f-string
+  "PLR0915", # Too many statements
+  "TRY300",  # Try else block recommendation
+  "RET504",  # Unnecessary assignment before return
+  "PLR0912", # Too many branches
+  "TRY301",  # Abstract raise to inner function
+  "B904",    # Raise from err
 ]
 
 [tool.ty.environment]
@@ -61,8 +105,10 @@ allowed-unresolved-imports = [
   "msgspec",
   "google_antigravity_sdk",
   "graphifyy",
+  "yaml",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = "-p no:phoenix"

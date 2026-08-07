@@ -30,6 +30,10 @@ local linters = new Mapping<String, Step> {
     ["detect_private_key"] = Builtins.detect_private_key
     ["trailing_whitespace"] = Builtins.trailing_whitespace
     ["mixed_line_ending"] = Builtins.mixed_line_ending
+    ["no_shell_scripts"] {
+        glob = "**/*.sh"
+        check = "echo 'ERROR: Shell scripts (*.sh) are strictly prohibited. Use uv run via .mise.toml tasks or Python scripts.' && exit 1"
+    }
     ["verify"] {
         glob = "**/*.py"
         check = "PYTHONPATH=src ~/.local/share/mise/installs/python/3.14.3/bin/python3 .gemini/hooks/verify_environment.py"
