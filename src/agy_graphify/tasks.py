@@ -38,6 +38,14 @@ class TaskDispatcher:
         return func(*args, **kwargs)
 
 
+async def graphify_setup_action(*params: str) -> None:
+    """Execute graphify Python SDK skill update to auto-generate .graphify_version."""
+    import graphify.install
+
+    graphify.install.install(platform="antigravity", project=True, project_dir=Path("."))
+    logger.info("Graphify setup complete. .graphify_version generated.")
+
+
 async def vendor_clone_action(*params: str, vendor_dir: Path | None = None) -> list[Path]:
     """Automated cloning of 3rd-party dependency repositories into vendor/ using asyncio.create_subprocess_exec.
 
@@ -602,13 +610,12 @@ async def async_main() -> None:
         print("=== Multi-Agent Harness Validation Passed Successfully ===")
 
     async def graphify_setup_action(*params: str) -> None:
-        from .config import GraphifyConfig
+        import graphify.install
+        from pathlib import Path
 
-        cfg = GraphifyConfig.load()
-        cfg.active_llm_assistant = "colibri"
-        cfg.save()
+        graphify.install.install(platform="antigravity", project=True, project_dir=Path("."))
         print(
-            "Graphify setup complete. Active LLM assistant set to 'colibri' in ~/.graphify/config.json."
+            "Graphify setup complete. .graphify_version generated."
         )
 
     async def colibri_extract_action(*params: str) -> None:
@@ -691,6 +698,10 @@ async def async_main() -> None:
         out_dir = Path.cwd() / "graphify-out"
         out_dir.mkdir(parents=True, exist_ok=True)
         (out_dir / "graph.json").write_text(res.model_dump_json(indent=2), encoding="utf-8")
+        
+        report_content = f"# Graphify Report\n\nTotal nodes: {len(res.nodes)}\nTotal edges: {len(res.edges)}\n"
+        (out_dir / "GRAPH_REPORT.md").write_text(report_content, encoding="utf-8")
+        
         logger.info(
             f"Colibri Graphify complete: {len(res.nodes)} nodes written to graphify-out/graph.json"
         )

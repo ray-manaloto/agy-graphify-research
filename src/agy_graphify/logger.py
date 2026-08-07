@@ -45,28 +45,39 @@ def configure_logger(
 UNIVERSAL_LOG_PATH = Path(".gemini") / "telemetry" / "universal.log"
 
 
+_UNIVERSAL_LOGGING_INITIALIZED: bool = False
+
+
 def setup_universal_logging(
     log_file: Path | None = None,
     level: str = "INFO",
 ) -> Path:
-    """Redirect loguru logs, stdout, and stderr to a single universal log file."""
+    """Redirect loguru logs, stdout, and stderr to a single universal log file with multi-process queue safety."""
+    global _UNIVERSAL_LOGGING_INITIALIZED
     target_log = log_file or UNIVERSAL_LOG_PATH
     target_log.parent.mkdir(parents=True, exist_ok=True)
 
-    # Add console sink
+    if _UNIVERSAL_LOGGING_INITIALIZED:
+        return target_log
+
+    _UNIVERSAL_LOGGING_INITIALIZED = True
+
+    # Add console sink (multiprocess-safe via enqueue=True)
     logger.add(
         sys.stderr,
         level=level,
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+        enqueue=True,
     )
 
-    # Add universal file sink
+    # Add universal file sink (multiprocess-safe via enqueue=True)
     logger.add(
         str(target_log),
         level=level,
         format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
         rotation="50 MB",
         retention="10 days",
+        enqueue=True,
     )
 
     logger.info(f"Universal logging initialized at {target_log}")

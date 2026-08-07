@@ -15,31 +15,33 @@ class FailFastMonitor:
     def __init__(self, max_consecutive_errors: int = 3) -> None:
         self.max_consecutive_errors = max_consecutive_errors
 
-    def scan_log(self, log_path: Path | None = None) -> list[str]:
+    def scan_log(self, log_path: Path | None = None, fail_on_warnings: bool = False) -> list[str]:
         target = log_path or UNIVERSAL_LOG_PATH
         if not target.exists():
             logger.info(f"Log file {target} does not exist yet. No issues found.")
             return []
 
-        lines = target.read_text(encoding="utf-8", errors="ignore").splitlines()
+        all_lines = target.read_text(encoding="utf-8", errors="ignore").splitlines()
+        lines = all_lines[-50:] if len(all_lines) > 50 else all_lines
         critical_issues: list[str] = []
         consecutive_errors = 0
 
         operational_targets = ("colibri_extractor", "source_registry", "verify", "graph_engine", "ingest", "extract")
         for line in lines:
-            if ("ERROR" in line or "Traceback" in line or "Failed to clone" in line) and "Unknown action" not in line and any(t in line for t in operational_targets):
+            is_issue = ("ERROR" in line or "Traceback" in line or "Failed to clone" in line or (fail_on_warnings and "WARNING" in line))
+            if is_issue and "Unknown action" not in line and any(t in line for t in operational_targets):
                 consecutive_errors += 1
                 critical_issues.append(line)
                 if consecutive_errors >= self.max_consecutive_errors:
-                    logger.error(f"FAIL-FAST ALERT: {consecutive_errors} consecutive operational errors detected in log!")
+                    logger.error(f"FAIL-FAST ALERT: {consecutive_errors} consecutive operational errors/warnings detected in log!")
             else:
                 consecutive_errors = 0
 
         logger.info(f"Fail-Fast Watchdog Scan: Found {len(critical_issues)} critical issues across {len(lines)} log lines.")
         return critical_issues
 
-    def assert_no_critical_errors(self) -> None:
-        issues = self.scan_log()
+    def assert_no_critical_errors(self, fail_on_warnings: bool = False, log_path: Path | None = None) -> None:
+        issues = self.scan_log(log_path=log_path, fail_on_warnings=fail_on_warnings)
         if issues:
             logger.error(f"Fail-Fast Monitor Assertion Failed: {len(issues)} critical log issues detected.")
             sys.exit(1)
@@ -47,10 +49,12 @@ class FailFastMonitor:
             logger.info("Fail-Fast Monitor Assertion Passed: 0 critical log issues detected.")
 
 
-def monitor_logs() -> None:
+def monitor_logs(fail_on_warnings: bool = False, log_path: Path | None = None) -> None:
     """CLI Entrypoint for monitoring logs."""
+    import os
+    env_fail = os.environ.get("FAIL_ON_WARNINGS") == "1"
     monitor = FailFastMonitor()
-    monitor.assert_no_critical_errors()
+    monitor.assert_no_critical_errors(fail_on_warnings=fail_on_warnings or env_fail, log_path=log_path)
 
 
 __all__ = ["FailFastMonitor", "monitor_logs"]

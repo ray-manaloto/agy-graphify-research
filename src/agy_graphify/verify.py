@@ -288,7 +288,9 @@ class EnvironmentVerifier:
                     stderr=subprocess.DEVNULL,
                 ).strip()
 
-                if branch == "main" or (head and main_sha and head == main_sha):
+                is_main_branch = branch in ("main", "master")
+                is_detached_or_unnamed = not branch or branch == head or not branch.startswith(("feat/", "fix/", "patch/", "work/"))
+                if is_main_branch or (is_detached_or_unnamed and head and main_sha and head == main_sha):
                     violations.append(
                         "Direct commit to main branch is prohibited without ALLOW_MAIN_COMMIT=1 override."
                     )
@@ -322,6 +324,20 @@ class EnvironmentVerifier:
         forensic_v = await self.integrity_auditor.audit_codebase()
         pypi_v, pypi_status = await self._check_pypi_versions()
         github_v, github_status = await self._check_github_versions()
+        
+        try:
+            from .monitor import monitor_logs
+            target_log = self.project_dir / ".gemini" / "telemetry" / "universal.log"
+            if target_log.exists():
+                monitor_logs(log_path=target_log)
+        except SystemExit:
+            res = VerificationResult(
+                decision=Decision.deny,
+                reason="State verification failed: Fail-Fast Watchdog failed due to critical log issues.",
+            )
+            self._cached_result = res
+            self._cached_timestamp = time.time()
+            return res
 
         # Audit repository count in repos/ against extended_repo_manifest.json
         manifest_file = self.project_dir / "graphify-out" / "extended_repo_manifest.json"

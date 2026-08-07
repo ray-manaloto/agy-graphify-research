@@ -280,3 +280,11 @@ class ColibriExtractor:
         except Exception as err:
             logger.warning(f"Could not record learning to global memory: {err}")
         return learning_node
+
+
+class ServerlessColibriRunner:
+    """Zero-token local Colibri Graphify in-process pipeline runner."""
+
+    async def run_task(self, description: str, target_dir: Path) -> GraphData:
+        extractor = ColibriExtractor()
+        return await extractor.extract_directory(target_dir)
