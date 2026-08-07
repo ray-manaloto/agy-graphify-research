@@ -75,5 +75,5 @@ class GraphifyConfig:
             path.write_text(json.dumps(data, indent=2), encoding="utf-8")
             logger.info(f"Graphify configuration saved to {path}")
         except Exception as err:
-            logger.warning(f"Could not save config to {path}: {err}")
+            logger.info(f"Could not save config to {path}: {err}")
         return path

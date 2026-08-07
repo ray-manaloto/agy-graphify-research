@@ -41,14 +41,14 @@ class ColibriExtractor:
         self._attempted_launch = True
 
         if not self.config.colibri.auto_launch:
-            logger.warning(f"Colibri server at {self.server_url} offline and auto_launch is False.")
+            logger.info(f"Colibri server at {self.server_url} offline and auto_launch is False. Using heuristic fallback.")
             return False
 
         script = Path(
             self.config.colibri.server_script or "scratch/colibri/repo/c/openai_server.py"
         )
         if not script.is_file():
-            logger.warning(
+            logger.info(
                 f"Colibri server script not found at {script}. Proceeding with offline fallback."
             )
             return False
@@ -72,7 +72,7 @@ class ColibriExtractor:
                     logger.info("Colibri local server successfully launched and ready.")
                     return True
 
-            logger.warning("Colibri server launched but health check timed out.")
+            logger.info("Colibri server launched but health check timed out. Proceeding with heuristic payload.")
             return False
         except Exception as err:
             logger.error(f"Failed to auto-launch Colibri server: {err}")
