@@ -136,6 +136,10 @@ run = "uv run agy-task update-all-sources \"$@\""
 description = "Run real-time fail-fast log assertion scanner"
 run = "uv run agy-task monitor-logs \"$@\""
 
+[tasks.clean-logs]
+description = "Clean old process-isolated log files"
+run = "uv run agy-task clean-logs \"$@\""
+
 [tasks.pr-merge]
 description = "Squash-merge Pull Request via gh CLI and delete feature branch"
 run = "uv run agy-task pr-merge \"$@\""

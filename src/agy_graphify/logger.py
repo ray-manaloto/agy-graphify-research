@@ -66,7 +66,7 @@ def setup_universal_logging(
     logger.add(
         sys.stderr,
         level=level,
-        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+        format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | PID:{process.id} ({process.name}) | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
         enqueue=True,
     )
 
@@ -74,9 +74,20 @@ def setup_universal_logging(
     logger.add(
         str(target_log),
         level=level,
-        format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
+        format="{time:YYYY-MM-DD HH:mm:ss} | PID:{process.id} ({process.name}) | {level: <8} | {name}:{function}:{line} - {message}",
         rotation="50 MB",
         retention="10 days",
+        enqueue=True,
+    )
+
+    import os
+    proc_log = target_log.parent / f"proc_{os.getpid()}.log"
+    logger.add(
+        str(proc_log),
+        level=level,
+        format="{time:YYYY-MM-DD HH:mm:ss} | PID:{process.id} ({process.name}) | {level: <8} | {name}:{function}:{line} - {message}",
+        rotation="10 MB",
+        retention="7 days",
         enqueue=True,
     )
 
