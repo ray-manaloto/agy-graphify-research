@@ -27,3 +27,19 @@ def test_canonical_skills_contain_valid_frontmatter() -> None:
         assert skill_file.exists(), f"Skill directory '{skill_dir.name}' missing SKILL.md!"
         content = skill_file.read_text(encoding="utf-8")
         assert content.startswith("---"), f"{skill_file} missing YAML frontmatter header ('---')"
+
+
+def test_master_graphify_pipeline_retains_all_features() -> None:
+    pipeline_file = Path(".agents/skills/graphify_pipeline/SKILL.md")
+    assert pipeline_file.exists(), "graphify_pipeline/SKILL.md missing"
+    content = pipeline_file.read_text(encoding="utf-8")
+
+    required_keywords = [
+        "update-all-sources",
+        "colibri-graphify",
+        "Deduplicate",
+        "graphify-out/graph.json",
+        "graphify-out/GRAPH_REPORT.md",
+    ]
+    for kw in required_keywords:
+        assert kw in content, f"Master graphify_pipeline skill missing critical feature keyword '{kw}'"
