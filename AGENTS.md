@@ -47,6 +47,7 @@ When ending a session or completing a major task:
 - **Mandatory `uv run` Tooling**: All commands, tests, and tasks MUST be executed through `uv run` via `.mise.toml` task wrappers backed by `pyproject.toml` entrypoints.
 - **Zero Shell Script Policy (`*.sh` Ban)**: Shell scripts (`*.sh`) are strictly prohibited in the codebase (outside vendor/3rd-party repositories). Enforcement is strictly checked by `hk.pkl` (`no_shell_scripts` linter), `src/agy_graphify/verify.py` (`EnvironmentVerifier`), and git pre-commit hooks.
 - **Python Library-First Architecture**: All tasks, graph execution engines, telemetry loops, and plugins must be written in Python inside `src/agy_graphify/` and exposed via `pyproject.toml` script entrypoints.
+- **Explicit File Truncation Rule**: Never prefix shell commands with bare file redirection (`> path/to/file && command`). File truncations MUST use explicit commands (`: > path/to/file` or `cat /dev/null > path/to/file` or Python file methods) to prevent shell execution syntax errors.
 
 ---
 
