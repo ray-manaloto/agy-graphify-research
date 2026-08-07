@@ -631,24 +631,38 @@ async def async_main() -> None:
     from .source_registry import update_all_sources
 
     async def create_pr_action(*params: str) -> None:
-        branch = params[0] if params else "feat/agents-md-rules-and-pr-skill"
-        title = "feat(docs): update AGENTS.md rules and add pr skill"
+        branch = params[0] if params else "feat/learn-skill-and-pr-resilience"
+        raw_title = branch.removeprefix("feat/").removeprefix("fix/").replace("-", " ")
+        scope = "graph-engine" if any(k in branch for k in ("engine", "resume", "dag")) else "core"
+        prefix = "fix" if branch.startswith("fix/") else "feat"
+        title = f"{prefix}({scope}): {raw_title}"
         logger.info(f"Rebasing onto main and creating clean feature branch '{branch}'...")
 
-        p_co = await asyncio.create_subprocess_exec("git", "checkout", "main")
-        await p_co.wait()
-        p_pull = await asyncio.create_subprocess_exec("git", "pull", "--rebase", "origin", "main")
-        await p_pull.wait()
+        # Clean up stale rebase if left in broken state
+        if (Path.cwd() / ".git" / "rebase-merge").exists() or (Path.cwd() / ".git" / "rebase-apply").exists():
+            await (await asyncio.create_subprocess_exec("git", "rebase", "--abort")).wait()
 
-        # Cleanly recreate target feature branch off rebased main
-        await (await asyncio.create_subprocess_exec("git", "branch", "-D", branch)).wait()
-        p_b = await asyncio.create_subprocess_exec("git", "checkout", "-b", branch)
-        await p_b.wait()
+        # Create/checkout feature branch first to preserve unstaged changes
+        await (await asyncio.create_subprocess_exec("git", "checkout", "-B", branch)).wait()
+        await (await asyncio.create_subprocess_exec("git", "add", "-A")).wait()
 
-        p_add = await asyncio.create_subprocess_exec("git", "add", "-A")
-        await p_add.wait()
-        p_cm = await asyncio.create_subprocess_exec("git", "commit", "-m", title)
-        await p_cm.wait()
+        # Check git status before committing
+        st_proc = await asyncio.create_subprocess_exec(
+            "git", "status", "--porcelain", stdout=asyncio.subprocess.PIPE
+        )
+        st_out, _ = await st_proc.communicate()
+        if st_out.strip():
+            p_cm = await asyncio.create_subprocess_exec("git", "commit", "-m", title)
+            await p_cm.wait()
+
+        # Rebase feature branch onto origin/main
+        await (await asyncio.create_subprocess_exec("git", "fetch", "origin", "main")).wait()
+        await (await asyncio.create_subprocess_exec("git", "rebase", "origin/main")).wait()
+
+        p_push = await asyncio.create_subprocess_exec(
+            "git", "push", "-u", "origin", branch, "--force-with-lease"
+        )
+        await p_push.wait()
 
         p_pr = await asyncio.create_subprocess_exec("gh", "pr", "create", "--fill", "--head", branch)
         await p_pr.wait()
