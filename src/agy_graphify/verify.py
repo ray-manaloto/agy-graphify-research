@@ -266,7 +266,7 @@ class EnvironmentVerifier:
 
         allow_main = os.environ.get("ALLOW_MAIN_COMMIT")
         if allow_main == "1":
-            logger.warning("ALLOW_MAIN_COMMIT=1 is active: Branch protection bypassed.")
+            logger.info("ALLOW_MAIN_COMMIT=1 is active: Branch protection bypassed.")
         else:
             try:
                 branch = subprocess.check_output(

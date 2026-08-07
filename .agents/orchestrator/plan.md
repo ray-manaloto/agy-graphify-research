@@ -1,25 +1,22 @@
-# Execution Plan: OpenAI Symphony Colibri MoE Benchmarking Campaign
+# Orchestration Plan: Skill Consolidation & Verification
 
-## Goal
-Parse and execute the 5-node OpenAI Symphony Colibri MoE Benchmarking Campaign workflow (`docs/workflows/colibri_moe_benchmark.yaml`) via `StateGraphEngine` with `EventDispatcher` emissions, record causal events via `MemoryStoreAdapter` in `.gemini/telemetry/causal_events.jsonl`, achieve 100% test pass rate (70/70 tests), and produce/update `docs/colibri_benchmark_report.md` with throughput, TTFT latency, OTEL spans, and Mermaid streaming pipeline diagrams adhering strictly to OKF spec.
+## Objective
+Consolidate repository source ingestion and Colibri knowledge graph extraction into `graphify_pipeline` (`.agents/skills/graphify_pipeline/SKILL.md`) as the single canonical master skill, eliminate duplicate or broken symlinks in `.agents/skills/`, and verify via `tests/test_skill_deduplication.py`, full unit test suite (124/124 tests pass), and `ALLOW_MAIN_COMMIT=1 uv run agy-verify`.
+
+## Architecture & Scope
+- Master Skill: `.agents/skills/graphify_pipeline/SKILL.md`
+- Skills Directory: `.agents/skills/`
+- Test Suite: `tests/test_skill_deduplication.py`
 
 ## Milestones
-
-### Milestone 1: Exploration & System State Inspection
-- [ ] Dispatch 3 Explorers (`teamwork_preview_explorer`) to inspect:
-  - `docs/workflows/colibri_moe_benchmark.yaml`
-  - `src/agy_graphify/graph_engine.py`, `src/agy_graphify/telemetry.py`, `src/agy_graphify/workflow_parser.py`
-  - Existing tests in `tests/` and CLI/runner tasks in `src/agy_graphify/`
-  - Current state of `docs/colibri_benchmark_report.md` and `.gemini/telemetry/causal_events.jsonl`
-
-### Milestone 2: Workflow Execution, Telemetry Recording & Verification
-- [ ] Dispatch Worker (`teamwork_preview_worker`) to execute/wire the 5 DAG nodes (`plan_benchmark`, `inspect_metal_shaders`, `execute_benchmark_suite`, `verify_telemetry_spans`, `qa_adversarial_review`) using `StateGraphEngine`, `EventDispatcher`, and `MemoryStoreAdapter`.
-- [ ] Run `.venv/bin/python -m pytest` via worker and verify 100% pass rate (70/70 tests).
-- [ ] Dispatch Reviewers (`teamwork_preview_reviewer`) and Challengers (`teamwork_preview_challenger`) to audit correctness.
-- [ ] Dispatch Forensic Auditor (`teamwork_preview_auditor`) to verify zero integrity violations.
-
-### Milestone 3: OKF Report Update & Final Victory Verification
-- [ ] Dispatch Worker (`teamwork_preview_worker`) to update `docs/colibri_benchmark_report.md` with throughput, TTFT latency, OTEL span trace summary, and Mermaid streaming pipeline diagrams (100% OKF compliant).
-- [ ] Run `uv run python3 -m agy_graphify.okf docs` or relevant verification task to validate OKF compliance.
-- [ ] Perform final Reviewer & Forensic Audit gate checks.
-- [ ] Notify Sentinel / parent for final Victory Audit confirmation.
+1. **Step 0: Survey & Discovery** (3 Explorers)
+   - Map existing skills in `.agents/skills/` (including `graphify_pipeline`, `repo_ingest`, `colibri_graphify`, `colibri_benchmark`, etc.)
+   - Identify duplicate/broken symlinks (`visual-edit`, `visual-plan`, `visual-recap`, etc.)
+   - Inspect existing `tests/test_skill_deduplication.py` and current pytest results.
+2. **Milestone 1: Master Skill Consolidation** (R1)
+   - Ensure `.agents/skills/graphify_pipeline/SKILL.md` incorporates complete parsing (GitHub URLs, Crates.io packages), deduplication against `config/sources.json`, Git SHA differential tracking (`uv run agy-task update-all-sources`), and local zero-token Colibri graph extraction (`uv run agy-task colibri-graphify`).
+3. **Milestone 2: Duplicate Symlink & Skill Cleanup** (R2)
+   - Remove duplicate/broken symlinks (`visual-edit`, `visual-plan`, `visual-recap`), retaining only clean canonical underscore directories.
+4. **Milestone 3: Unit Test Suite Enhancement & Verification** (R3 & Acceptance)
+   - Update `tests/test_skill_deduplication.py` with assertions for zero broken/duplicate symlinks, valid YAML frontmatter, and feature keyword presence.
+   - Run unit test suite (124/124 passing) and `ALLOW_MAIN_COMMIT=1 uv run agy-verify` returning `decision: allow`.
