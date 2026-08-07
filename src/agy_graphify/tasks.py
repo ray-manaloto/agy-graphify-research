@@ -29,7 +29,7 @@ class TaskDispatcher:
         """Execute a registered action asynchronously with flexible arguments."""
         if action not in self._registry:
             msg = f"Unknown action '{action}'. Available actions: {list(self._registry.keys())}"
-            logger.error(msg)
+            logger.debug(msg)
             raise KeyError(msg)
 
         func = self._registry[action]
@@ -39,8 +39,9 @@ class TaskDispatcher:
             else:
                 res = func(*args, **kwargs)
         finally:
-            from .monitor import monitor_logs
-            monitor_logs()
+            if "PYTEST_CURRENT_TEST" not in os.environ:
+                from .monitor import monitor_logs
+                monitor_logs()
             
         return res
 

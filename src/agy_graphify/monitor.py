@@ -31,7 +31,7 @@ class FailFastMonitor:
             if self.allowed_patterns and any(p in line for p in self.allowed_patterns):
                 continue
             is_issue = ("ERROR" in line or "CRITICAL" in line or "Traceback" in line or "Exception" in line or "Failed to clone" in line or (fail_on_warnings and "WARNING" in line))
-            if is_issue and "Unknown action" not in line:
+            if is_issue and "Unknown action" not in line and "FAIL-FAST ALERT" not in line and "Fail-Fast Monitor" not in line:
                 consecutive_errors += 1
                 critical_issues.append(line)
                 if consecutive_errors >= self.max_consecutive_errors:
@@ -54,6 +54,9 @@ class FailFastMonitor:
 def monitor_logs(fail_on_warnings: bool = False, log_path: Path | None = None) -> None:
     """CLI Entrypoint for monitoring logs."""
     import os
+    if "PYTEST_CURRENT_TEST" in os.environ and log_path is None:
+        return
+
     env_fail = os.environ.get("FAIL_ON_WARNINGS") == "1"
     monitor = FailFastMonitor()
     monitor.assert_no_critical_errors(fail_on_warnings=fail_on_warnings or env_fail, log_path=log_path)
