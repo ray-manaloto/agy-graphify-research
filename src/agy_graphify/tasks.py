@@ -627,6 +627,7 @@ async def async_main() -> None:
         p_pull = await asyncio.create_subprocess_exec("git", "pull", "--rebase", "origin", "main")
         await p_pull.wait()
 
+        # Cleanly recreate target feature branch off rebased main
         await (await asyncio.create_subprocess_exec("git", "branch", "-D", branch)).wait()
         p_b = await asyncio.create_subprocess_exec("git", "checkout", "-b", branch)
         await p_b.wait()
@@ -649,6 +650,7 @@ async def async_main() -> None:
         logger.info(
             f"PR '{branch}' created, merged to remote main, local main rebased, and feature branch deleted cleanly."
         )
+
 
     async def colibri_graphify_action(*params: str) -> dict[str, Any]:
         from .colibri_extractor import ServerlessColibriRunner

@@ -123,3 +123,28 @@ run = "uv run python scratch/benchmark_colibri_models.py \"$@\""
 [tasks.universal-log]
 description = "Tail universal log file .gemini/telemetry/universal.log"
 run = "tail -f .gemini/telemetry/universal.log"
+
+[tasks.update-sources]
+description = "Update all repositories and check Git SHA differential tracking state"
+run = "uv run agy-task update-all-sources \"$@\""
+
+[tasks.monitor-logs]
+description = "Run real-time fail-fast log assertion scanner"
+run = "uv run agy-task monitor-logs \"$@\""
+
+[tasks.pr-merge]
+description = "Squash-merge Pull Request via gh CLI and delete feature branch"
+run = "uv run agy-task pr-merge \"$@\""
+
+[tasks.sync-main]
+description = "Checkout local main and pull latest changes from origin/main"
+run = "uv run agy-task sync-main \"$@\""
+
+[tasks.create-pr]
+description = "Create a new feature branch, commit changes, create PR via gh CLI, and return to main"
+run = "uv run agy-task create-pr \"$@\""
+
+[tasks.colibri-graphify]
+description = "Execute local zero-token Colibri Graphify AST and semantic graph extraction"
+run = "uv run agy-task colibri-graphify \"$@\""
+
