@@ -15,7 +15,7 @@
         "properties": {
           "id": { "type": "string" },
           "node_type": { "type": "string", "enum": ["task", "subagent", "evaluator", "remediation"] },
-          "status": { "type": "string", "enum": ["pending", "running", "passed", "completed", "failed", "skipped"] },
+          "status": { "type": "string", "enum": ["pending", "running", "passed", "completed", "failed", "skipped", "pending_subagent_dispatch"] },
           "dependencies": { "type": "array", "items": { "type": "string" } },
           "subagent_role": { "type": "string" },
           "task_action": { "type": "string" },
@@ -37,6 +37,7 @@
         "NODE_COMPLETED",
         "NODE_FAILED",
         "NODE_SKIPPED",
+        "NODE_PENDING_SUBAGENT",
         "REMEDIATION_TRIGGERED"
       ]
     },

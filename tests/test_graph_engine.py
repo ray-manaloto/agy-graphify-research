@@ -269,3 +269,125 @@ async def test_register_default_listeners_integration(tmp_path: Path) -> None:
     assert len(dispatcher._listeners[EventType.NODE_COMPLETED]) >= 1
     assert len(dispatcher._listeners[EventType.NODE_FAILED]) >= 1
     assert len(dispatcher._listeners[EventType.REMEDIATION_TRIGGERED]) >= 1
+
+
+@pytest.mark.asyncio
+async def test_dag_resume_skips_completed_nodes(tmp_path: Path) -> None:
+    engine = StateGraphEngine(project_dir=tmp_path)
+    executed_nodes: list[str] = []
+
+    def handler(node: Node) -> None:
+        executed_nodes.append(node.id)
+
+    schema = GraphEngineSchema(
+        graph_id="resume_test",
+        execution_mode=ExecutionMode.dag,
+        status=Status.running,
+        nodes=[
+            Node(id="n1", node_type=NodeType.task, status=Status1.completed),
+            Node(id="n2", node_type=NodeType.task, status=Status1.pending, dependencies=["n1"]),
+        ],
+    )
+
+    handlers = {"n1": handler, "n2": handler}
+    res = await engine.execute_graph(schema, task_handlers=handlers)
+    assert res.status == Status.completed
+    # n1 was already completed, so only n2 should execute
+    assert executed_nodes == ["n2"]
+
+
+@pytest.mark.asyncio
+async def test_cascading_skip_and_completion_guard(tmp_path: Path) -> None:
+    engine = StateGraphEngine(project_dir=tmp_path)
+
+    def failing_handler(node: Node) -> None:
+        raise RuntimeError("Simulated failure")
+
+    schema = GraphEngineSchema(
+        graph_id="cascading_skip_test",
+        execution_mode=ExecutionMode.dag,
+        status=Status.pending,
+        nodes=[
+            Node(id="n1", node_type=NodeType.task, status=Status1.pending),
+            Node(id="n2", node_type=NodeType.task, status=Status1.pending, dependencies=["n1"]),
+            Node(id="n3", node_type=NodeType.task, status=Status1.pending, dependencies=["n2"]),
+        ],
+    )
+
+    res = await engine.execute_graph(schema, task_handlers={"n1": failing_handler})
+    node_map = {n.id: n for n in res.nodes}
+    assert node_map["n1"].status == Status1.failed
+    assert node_map["n2"].status == Status1.skipped
+    assert node_map["n3"].status == Status1.skipped
+    assert res.status == Status.failed
+
+
+@pytest.mark.asyncio
+async def test_unhandled_subagent_role_dispatch(tmp_path: Path) -> None:
+    dispatcher = EventDispatcher()
+    dispatched_events: list[SymphonyEvent] = []
+
+    def track(e: SymphonyEvent) -> None:
+        dispatched_events.append(e)
+
+    dispatcher.subscribe(EventType.NODE_PENDING_SUBAGENT, track)
+
+    def pending_subagent_handler(node: Node) -> None:
+        node.status = Status1.pending_subagent_dispatch
+
+    engine = StateGraphEngine(project_dir=tmp_path, dispatcher=dispatcher)
+    schema = GraphEngineSchema(
+        graph_id="unhandled_subagent_test",
+        execution_mode=ExecutionMode.dag,
+        status=Status.pending,
+        nodes=[
+            Node(
+                id="dev_task",
+                node_type=NodeType.task,
+                status=Status1.pending,
+                subagent_role="developer",
+                task_action="Write new feature",
+            )
+        ],
+    )
+
+    res = await engine.execute_graph(schema, task_handlers={"dev_task": pending_subagent_handler})
+    assert res.nodes[0].status == Status1.pending_subagent_dispatch
+    assert res.status == Status.running
+    assert len(dispatched_events) == 1
+    assert dispatched_events[0].event_type == EventType.NODE_PENDING_SUBAGENT
+    assert dispatched_events[0].node_id == "dev_task"
+
+
+@pytest.mark.asyncio
+async def test_cross_process_file_lock(tmp_path: Path) -> None:
+    engine = StateGraphEngine(project_dir=tmp_path)
+    schema = GraphEngineSchema(
+        graph_id="lock_test",
+        execution_mode=ExecutionMode.dag,
+        status=Status.pending,
+        nodes=[Node(id="n1", node_type=NodeType.task, status=Status1.pending)],
+    )
+
+    # Save state using atomic POSIX fcntl.flock write lock
+    await engine.save_state_atomic(schema)
+    assert (tmp_path / ".gemini" / "graph_state.json").is_file()
+
+    # Load state using atomic POSIX fcntl.flock read lock
+    loaded = await engine.load_state_cold_start("lock_test")
+    assert loaded.graph_id == "lock_test"
+
+    import asyncio
+
+    # Spawn 2 concurrent CLI subprocesses reading state simultaneously
+    p1 = await asyncio.create_subprocess_exec(
+        "uv", "run", "agy-graph-engine", "--check-dag", cwd=str(tmp_path)
+    )
+    p2 = await asyncio.create_subprocess_exec(
+        "uv", "run", "agy-graph-engine", "--check-dag", cwd=str(tmp_path)
+    )
+
+    c1, c2 = await asyncio.gather(p1.wait(), p2.wait())
+    assert c1 == 0
+    assert c2 == 0
+

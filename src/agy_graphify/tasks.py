@@ -545,11 +545,24 @@ async def dag_plan_action(*params: str) -> None:
 
 async def dag_resume_action(*_params: str) -> None:
     from .graph_engine import StateGraphEngine
+    from .models.graph_engine_schema import Status1
 
     engine = StateGraphEngine()
     schema = await engine.load_state_cold_start()
+    uncompleted = [n for n in schema.nodes if n.status != Status1.completed]
+    if not uncompleted and schema.nodes:
+        print(
+            f"Resumed DAG execution complete. All {len(schema.nodes)} node(s) are already completed. Status: {schema.status.value}"
+        )
+        return
+
+    logger.info(
+        f"Resuming DAG execution for graph '{schema.graph_id}': {len(uncompleted)} uncompleted node(s) of {len(schema.nodes)} total."
+    )
     updated_schema = await engine.execute_graph(schema)
-    print(f"Resumed DAG execution complete. Status: {updated_schema.status.value}")
+    print(
+        f"Resumed DAG execution complete. Processed {len(uncompleted)} node(s). Status: {updated_schema.status.value}"
+    )
 
 
 async def async_main() -> None:
