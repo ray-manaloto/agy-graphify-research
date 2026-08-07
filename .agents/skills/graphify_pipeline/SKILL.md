@@ -13,9 +13,12 @@ This skill orchestrates the entire Graphify zero-token Colibri knowledge graph e
 2. **Modular Mise Task (`.mise.toml`)**: `uv run agy-task <action>` commands that decouple the agent from brittle bash scripts, handling toolchain/dependency complexity.
 3. **Modular Python Library Modules (`src/agy_graphify/tasks.py`)**: Abstract Python implementations executed cleanly across any platform without relying on shell commands.
 
-## 1. Parse and Deduplicate Source Repositories
+## 1. Parse, Deduplicate, and Ingest Multi-Modal Sources
 
-- Accept GitHub URLs, organisation pages, or Crates.io packages.
+- **Code Repositories**: Accept GitHub URLs, organisation pages, or Crates.io packages cloned into `repos/`.
+- **PDF Papers & Books**: Process `.pdf` documents placed in `raw/` or fetched via `graphify add <url>`.
+- **Video & Audio**: Process `.mp4`, `.mp3`, `.m4a`, `.wav` media files placed in `raw/` via Whisper transcription.
+- **Scraped Web URLs**: Fetch and convert web articles, documentation pages, or Wikipedia entries into `raw/`.
 - Deduplicate target URLs against existing registered repositories in `config/sources.json`.
 - Execute multi-threaded clone and Git SHA differential tracking to resolve new or changed source code:
 
