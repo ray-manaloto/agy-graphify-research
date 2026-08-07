@@ -713,6 +713,23 @@ async def async_main() -> None:
     async def update_sources_action(*_params: str) -> None:
         update_all_sources()
 
+    async def update_github_ruleset_action(*_params: str) -> None:
+        logger.info("Configuring GitHub remote branch protection via gh api...")
+        repo_url_proc = await asyncio.create_subprocess_exec("git", "config", "--get", "remote.origin.url", stdout=asyncio.subprocess.PIPE)
+        out, _ = await repo_url_proc.communicate()
+        if not out:
+            return
+        repo = out.decode("utf-8").strip().split(":")[-1].replace(".git", "")
+        proc = await asyncio.create_subprocess_exec(
+            "gh", "api", "-X", "PUT", f"repos/{repo}/branches/main/protection",
+            "-f", "enforce_admins=true",
+            "-f", "required_status_checks=null",
+            "-f", "required_pull_request_reviews=null",
+            "-f", "restrictions=null"
+        )
+        await proc.wait()
+
+
     async def monitor_logs_action(*_params: str) -> None:
         monitor_logs()
 
@@ -728,6 +745,8 @@ async def async_main() -> None:
 
     dispatcher.register("update-all-sources", update_sources_action)
     dispatcher.register("update_all_sources", update_sources_action)
+    dispatcher.register("update-github-ruleset", update_github_ruleset_action)
+    dispatcher.register("update_github_ruleset", update_github_ruleset_action)
     dispatcher.register("monitor-logs", monitor_logs_action)
     dispatcher.register("monitor_logs", monitor_logs_action)
     dispatcher.register("verify", verify_action)

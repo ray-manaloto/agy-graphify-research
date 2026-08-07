@@ -74,3 +74,77 @@ async def test_live_api_version_checks(tmp_path):
     assert isinstance(violations, list)
     assert len(gh_status) == 1
     assert "GitHub:astral-sh/uv" in gh_status[0]
+
+
+@pytest.mark.asyncio
+async def test_branch_enforcement_deny_main_commit(tmp_path, monkeypatch):
+    verifier = EnvironmentVerifier(project_dir=tmp_path)
+    monkeypatch.delenv("ALLOW_MAIN_COMMIT", raising=False)
+    
+    # Mock subprocess.check_output to simulate HEAD == main
+    import subprocess
+    def mock_check_output(cmd, *args, **kwargs):
+        if "branch" in cmd: return "main\n"
+        return "123456"
+    monkeypatch.setattr(subprocess, "check_output", mock_check_output)
+    
+    violations = await verifier._check_branch_enforcement()
+    assert len(violations) == 1
+    assert "Direct commit to main branch is prohibited" in violations[0]
+
+@pytest.mark.asyncio
+async def test_branch_enforcement_allow_override(tmp_path, monkeypatch):
+    verifier = EnvironmentVerifier(project_dir=tmp_path)
+    monkeypatch.setenv("ALLOW_MAIN_COMMIT", "1")
+    
+    import subprocess
+    def mock_check_output(cmd, *args, **kwargs):
+        return "123456"
+    monkeypatch.setattr(subprocess, "check_output", mock_check_output)
+    
+    violations = await verifier._check_branch_enforcement()
+    assert len(violations) == 0
+
+@pytest.mark.asyncio
+async def test_branch_enforcement_allow_feature_branch(tmp_path, monkeypatch):
+    verifier = EnvironmentVerifier(project_dir=tmp_path)
+    monkeypatch.delenv("ALLOW_MAIN_COMMIT", raising=False)
+    
+    import subprocess
+    def mock_check_output(cmd, *args, **kwargs):
+        if "branch" in cmd: return "feat-branch\n"
+        if "HEAD" in cmd: return "abcdef"
+        if "main" in cmd: return "123456"
+        return ""
+    monkeypatch.setattr(subprocess, "check_output", mock_check_output)
+    
+    violations = await verifier._check_branch_enforcement()
+    assert len(violations) == 0
+
+@pytest.mark.asyncio
+async def test_branch_enforcement_deny_detached_head(tmp_path, monkeypatch):
+    verifier = EnvironmentVerifier(project_dir=tmp_path)
+    monkeypatch.delenv("ALLOW_MAIN_COMMIT", raising=False)
+    
+    import subprocess
+    def mock_check_output(cmd, *args, **kwargs):
+        return "123456"
+    monkeypatch.setattr(subprocess, "check_output", mock_check_output)
+    
+    violations = await verifier._check_branch_enforcement()
+    assert len(violations) == 1
+    assert "Direct commit to main branch is prohibited" in violations[0]
+
+@pytest.mark.asyncio
+async def test_branch_enforcement_deny_amend_main(tmp_path, monkeypatch):
+    verifier = EnvironmentVerifier(project_dir=tmp_path)
+    monkeypatch.delenv("ALLOW_MAIN_COMMIT", raising=False)
+    
+    import subprocess
+    def mock_check_output(cmd, *args, **kwargs):
+        return "123456"
+    monkeypatch.setattr(subprocess, "check_output", mock_check_output)
+    
+    violations = await verifier._check_branch_enforcement()
+    assert len(violations) == 1
+    assert "Direct commit to main branch is prohibited" in violations[0]
