@@ -391,3 +391,25 @@ async def test_cross_process_file_lock(tmp_path: Path) -> None:
     assert c1 == 0
     assert c2 == 0
 
+
+@pytest.mark.asyncio
+async def test_node_verification_caching_performance(tmp_path: Path) -> None:
+    """Verify that multiple node verifications reuse cached EnvironmentVerifier results in under 0.5s."""
+    import time
+    from agy_graphify.verify import EnvironmentVerifier
+
+    verifier = EnvironmentVerifier(project_dir=tmp_path)
+    
+    t0 = time.time()
+    res1 = await verifier.run_check(use_cache=True)
+    t1 = time.time()
+    
+    # 20 subsequent calls should hit cache instantly (< 0.05 seconds total)
+    for _ in range(20):
+        res_i = await verifier.run_check(use_cache=True)
+        assert res_i.decision == res1.decision
+
+    t2 = time.time()
+    assert (t2 - t1) < 0.5
+
+
