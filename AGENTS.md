@@ -69,5 +69,19 @@ When ending a session or completing a major task:
 - **Repo Ingest Skill**: Repository differential tracking and manifest updates MUST use `uv run agy-task update-all-sources` per `.agents/skills/repo_ingest/SKILL.md`.
 - **Zero-Token Graph Extraction**: Local knowledge graph updates MUST use `uv run agy-task colibri-graphify` (`ServerlessColibriRunner`) per `.agents/skills/colibri_graphify/SKILL.md`.
 
+---
+
+## 9. Cross-Process State Locking & Subagent Dispatch Invariant
+
+- **POSIX `fcntl.flock` Atomic State Protection**: All reads and writes to `.gemini/graph_state.json` MUST use OS-level `fcntl.flock` (`LOCK_SH` for reads, `LOCK_EX` for writes) to prevent cross-process state corruption during concurrent CLI invocations.
+- **Subagent Role Dispatch Guard**: Task nodes with assigned subagent roles MUST NOT be silently marked `completed` without executing a registered handler or emitting `NODE_PENDING_SUBAGENT`. Workflows containing skipped task nodes MUST mark overall graph status as `failed`.
+
+---
+
+## 10. Local & Remote Branch Protection Invariant
+
+- **Strict Branch Enforcement**: Direct commits to `main` (or detached HEAD matching `main` SHA) are strictly prohibited across all terminals and IDEs via native `.git/hooks/pre-commit` and `EnvironmentVerifier._check_branch_enforcement()`.
+- **Administrative Override Guard**: Administrative system syncs (`create_pr_action`, `sync_main_action`) MUST explicitly supply `ALLOW_MAIN_COMMIT=1` in subprocess environments to pass pre-commit checks, while logging prominent telemetry warnings.
+
 
 
