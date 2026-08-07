@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GraphEngineSchema",
+  "type": "object",
+  "properties": {
+    "graph_id": { "type": "string" },
+    "execution_mode": { "type": "string", "enum": ["dag", "sequential", "parallel"] },
+    "status": { "type": "string", "enum": ["pending", "running", "completed", "failed"] },
+    "remediation_count": { "type": "integer", "default": 0 },
+    "max_remediations": { "type": "integer", "default": 3 },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "node_type": { "type": "string", "enum": ["task", "subagent", "evaluator", "remediation"] },
+          "status": { "type": "string", "enum": ["pending", "running", "passed", "completed", "failed", "skipped"] },
+          "dependencies": { "type": "array", "items": { "type": "string" } },
+          "subagent_role": { "type": "string" },
+          "task_action": { "type": "string" },
+          "error_message": { "type": "string" }
+        },
+        "required": ["id", "node_type", "status"]
+      }
+    }
+  },
+  "required": ["graph_id", "execution_mode", "status", "nodes"],
+  "$defs": {
+    "EventType": {
+      "type": "string",
+      "enum": [
+        "WORKFLOW_STARTED",
+        "WORKFLOW_COMPLETED",
+        "WORKFLOW_FAILED",
+        "NODE_STARTED",
+        "NODE_COMPLETED",
+        "NODE_FAILED",
+        "NODE_SKIPPED",
+        "REMEDIATION_TRIGGERED"
+      ]
+    },
+    "SymphonyEvent": {
+      "type": "object",
+      "properties": {
+        "event_id": { "type": "string" },
+        "event_type": { "$ref": "#/$defs/EventType" },
+        "timestamp": { "type": "string" },
+        "graph_id": { "type": "string" },
+        "node_id": { "type": ["string", "null"] },
+        "payload": { "type": ["object", "null"] },
+        "error_message": { "type": ["string", "null"] }
+      },
+      "required": ["event_id", "event_type", "timestamp", "graph_id"]
+    },
+    "SymphonyNodeSpec": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "node_type": { "$ref": "#/properties/nodes/items/properties/node_type" },
+        "role": { "type": ["string", "null"] },
+        "instructions": { "type": ["string", "null"] },
+        "dependencies": { "type": ["array", "null"], "items": { "type": "string" } }
+      },
+      "required": ["id", "node_type"]
+    },
+    "SymphonyWorkflowSpec": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": ["string", "null"], "default": "1.0.0" },
+        "description": { "type": ["string", "null"] },
+        "execution_mode": { "$ref": "#/properties/execution_mode", "default": "dag" },
+        "max_remediations": { "type": ["integer", "null"], "default": 3 },
+        "nodes": { "type": "array", "items": { "$ref": "#/$defs/SymphonyNodeSpec" } }
+      },
+      "required": ["name", "nodes"]
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ColibriSchema",
+  "type": "object",
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "file_type": { "type": "string" },
+          "source_file": { "type": ["string", "null"] },
+          "source_location": { "type": ["string", "null"] },
+          "source_url": { "type": ["string", "null"] },
+          "captured_at": { "type": ["string", "null"] },
+          "author": { "type": ["string", "null"] },
+          "contributor": { "type": ["string", "null"] },
+          "rationale_for": { "type": ["string", "null"] }
+        },
+        "required": ["id", "label", "file_type"]
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "source": { "type": "string" },
+          "target": { "type": "string" },
+          "relation": { "type": "string" },
+          "confidence": { "type": "string" },
+          "confidence_score": { "type": "number" },
+          "source_file": { "type": ["string", "null"] },
+          "source_location": { "type": ["string", "null"] },
+          "weight": { "type": "number" }
+        },
+        "required": ["source", "target", "relation", "confidence"]
+      }
+    },
+    "hyperedges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "nodes": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "relation": { "type": "string" },
+          "confidence": { "type": "string" },
+          "confidence_score": { "type": "number" },
+          "source_file": { "type": ["string", "null"] }
+        },
+        "required": ["id", "label", "nodes", "relation"]
+      }
+    }
+  },
+  "required": ["nodes", "edges"]
+}

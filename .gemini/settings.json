@@ -11,7 +11,18 @@
     ".gemini/rules/audit_third_party_tools.md"
   ],
   "hooks": {
-    "verifyState": ".gemini/hooks/verify_environment.py"
+    "verifyState": ".gemini/hooks/verify_environment.py",
+    "BeforeTool": [
+      {
+        "matcher": "read_file|list_directory",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/rmanaloto/agy-graphify-research/.venv/bin/graphify hook-guard gemini"
+          }
+        ]
+      }
+    ]
   },
   "tools": {
     "useRipgrep": true

@@ -1,0 +1,55 @@
+site_name: AGY Graphify Research Documentation
+site_description: Open Knowledge Format & Autonomous Agent Orchestration Platform
+site_author: agy-graphify-research
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+  - tables
+  - attr_list
+
+nav:
+  - Home: index.md
+  - Architecture & Guardrails:
+      - Architecture: architecture.md
+      - Conventions: conventions.md
+      - Agent Guardrails: guardrails.md
+      - Session Handoff: handoff.md
+      - JSON Schemas: schemas.md
+  - Research Reports:
+      - Goal Specification: goal_spec.md
+      - Telemetry & Orchestration: telemetry_and_orchestration_research.md
+      - Colibrì Benchmark Report: colibri_benchmark_report.md

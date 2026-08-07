@@ -14,7 +14,8 @@
           "status": { "type": "string" },
           "subtasks": {
             "type": "array",
-            "items": { "type": "string" }
+            "items": { "type": "string" },
+            "default": []
           }
         },
         "required": ["role", "status"]

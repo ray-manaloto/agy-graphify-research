@@ -11,9 +11,9 @@ from .models.graph_schema import Edge, GraphData, Node
 class GraphifyEngine:
     """Manages knowledge graph extraction, persistent graph JSON, and community reports."""
 
-    def __init__(self, target_dir: Path | None = None) -> None:
+    def __init__(self, target_dir: Path | None = None, output_dir: Path | None = None) -> None:
         self.target_dir = target_dir or Path.cwd()
-        self.output_dir = self.target_dir / "graphify-out"
+        self.output_dir = output_dir or (self.target_dir / "graphify-out")
 
     async def build_graph(
         self, mode: str = "standard", options: list[str] | None = None
@@ -22,36 +22,57 @@ class GraphifyEngine:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         options = options or []
 
-        graph_data = GraphData(
-            nodes=[
-                Node(id="antigravity", label="Antigravity CLI", type="tool"),
-                Node(id="graphify", label="Graphify Engine", type="skill"),
-                Node(id="orchestration", label="Multi-Agent Orchestrator", type="plugin"),
-            ],
-            edges=[
-                Edge(source="antigravity", target="graphify", type="EXTRACTED", weight=1.0),
-                Edge(source="antigravity", target="orchestration", type="EXTRACTED", weight=1.0),
-            ],
-            metadata={
-                "mode": mode,
-                "options": options,
-                "project": self.target_dir.name,
-            },
-        )
+        if mode == "colibri":
+            from .colibri_extractor import ColibriExtractor
+
+            extractor = ColibriExtractor()
+            graph_data = await extractor.extract_directory(self.target_dir)
+        else:
+            graph_data = GraphData(
+                nodes=[
+                    Node(id="antigravity", label="Antigravity CLI", type="tool"),
+                    Node(id="graphify", label="Graphify Engine", type="skill"),
+                    Node(id="orchestration", label="Multi-Agent Orchestrator", type="plugin"),
+                ],
+                edges=[
+                    Edge(source="antigravity", target="graphify", type="EXTRACTED", weight=1.0),
+                    Edge(
+                        source="antigravity", target="orchestration", type="EXTRACTED", weight=1.0
+                    ),
+                ],
+                metadata={
+                    "mode": mode,
+                    "options": options,
+                    "project": self.target_dir.name,
+                },
+            )
 
         graph_file = self.output_dir / "graph.json"
         graph_file.write_text(graph_data.model_dump_json(indent=2), encoding="utf-8")
 
-        report_file = self.output_dir / "GRAPH_REPORT.md"
-        report_file.write_text(
-            "# Graphify Knowledge Graph Report\n\n"
-            f"Graph successfully built for **{self.target_dir.name}** in `{mode}` mode.\n\n"
-            "## Primary Nodes\n"
-            "- **antigravity**: Core execution agent\n"
-            "- **graphify**: Persistent graph extraction engine\n"
-            "- **orchestration**: Subagent multi-agent workflow manager\n",
-            encoding="utf-8",
+        target_name = self.target_dir.resolve().name or "root"
+        node_types: dict[str, int] = {}
+        for n in graph_data.nodes:
+            node_types[n.type] = node_types.get(n.type, 0) + 1
+
+        top_nodes = "\n".join(
+            f"- **{node.label}** (`{node.type}`): `{node.id}`"
+            for node in graph_data.nodes[:15]
         )
+        type_summary = "\n".join(f"- **{t}**: {c} nodes" for t, c in node_types.items())
+
+        report_content = (
+            f"# Graphify Knowledge Graph Report\n\n"
+            f"Graph successfully built for **{target_name}** in `{mode}` mode.\n\n"
+            f"### Statistics\n"
+            f"- **Total Extracted Nodes**: {len(graph_data.nodes)}\n"
+            f"- **Total Relationships / Edges**: {len(graph_data.edges)}\n\n"
+            f"### Node Category Breakdown\n{type_summary}\n\n"
+            f"## Extracted Primary Nodes\n{top_nodes}\n"
+        )
+
+        report_file = self.output_dir / "GRAPH_REPORT.md"
+        report_file.write_text(report_content, encoding="utf-8")
 
         logger.info(f"Graphify engine built {len(graph_data.nodes)} nodes in '{mode}' mode.")
         return graph_data

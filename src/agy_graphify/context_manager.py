@@ -34,25 +34,27 @@ class ContextManagerEngine:
     """Monitors context window usage (<50% threshold), manages subagent delegation, and checks release updates."""
 
     def __init__(self, project_dir: Path | None = None) -> None:
-        self.project_dir = project_dir or Path.cwd()
+        self.project_dir = (project_dir or Path.cwd()).resolve()
         self.mise_file = self.project_dir / ".mise.toml"
 
     async def evaluate_context(self, estimated_tokens: int = 40000) -> ContextMetrics:
         """Evaluate context window consumption against the 50% maximum threshold."""
         limit = 200000
-        utilization = (estimated_tokens / limit) * 100.0
+        clamped_tokens = max(0, estimated_tokens)
+        utilization = max(0.0, min(100.0, (clamped_tokens / limit) * 100.0))
         should_delegate = utilization >= 40.0
+        recommended = "pro" if utilization >= 45.0 else "flash"
 
         metrics = ContextMetrics(
-            estimated_context_tokens=estimated_tokens,
+            estimated_context_tokens=clamped_tokens,
             context_limit_tokens=limit,
             utilization_percentage=utilization,
             requires_subagent_delegation=should_delegate,
-            recommended_model="flash_lite" if utilization > 45.0 else "flash",
+            recommended_model=recommended,
         )
 
         logger.info(
-            f"Context Utilization: {utilization:.1f}% ({estimated_tokens}/{limit} tokens). "
+            f"Context Utilization: {utilization:.1f}% ({clamped_tokens}/{limit} tokens). "
             f"Subagent Delegation Required: {should_delegate}"
         )
         return metrics
@@ -71,11 +73,20 @@ class ContextManagerEngine:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, _ = await proc.communicate()
+            stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=10.0)
             if proc.returncode == 0:
                 for line in stdout.decode("utf-8").splitlines():
-                    parts = line.split()
-                    if len(parts) >= 3:
+                    line_str = line.strip()
+                    if (
+                        not line_str
+                        or line_str.lower().startswith("tool")
+                        or line_str.lower().startswith("name")
+                    ):
+                        continue
+                    parts = line_str.split()
+                    if len(parts) >= 3 and not parts[0].startswith("\x1b"):
+                        if parts[0].lower() in ("tool", "name", "package"):
+                            continue
                         tool, curr, latest = parts[0], parts[1], parts[2]
                         updates.append(
                             ReleaseUpdate(
@@ -85,7 +96,7 @@ class ContextManagerEngine:
                                 update_available=True,
                             )
                         )
-        except (OSError, subprocess.SubprocessError) as exc:
+        except (TimeoutError, OSError, subprocess.SubprocessError) as exc:
             logger.warning(f"Could not check tool release updates: {exc}")
 
         logger.info(f"Release Reviewer found {len(updates)} toolchain updates.")

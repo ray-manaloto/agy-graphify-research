@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OKFFrontmatter",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Document title"
+    },
+    "doc_id": {
+      "type": "string",
+      "pattern": "^okf-[a-z0-9-]+$",
+      "description": "Unique OKF document identifier"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semantic versioning string"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["report", "guide", "architecture", "spec", "api", "benchmark", "policy", "reference", "lesson"],
+      "description": "Document category type"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "review", "approved", "deprecated"],
+      "default": "approved"
+    },
+    "author": {
+      "type": "string",
+      "description": "Author or originating subsystem"
+    },
+    "created_at": {
+      "type": "string",
+      "description": "Creation timestamp in ISO-8601 format"
+    },
+    "updated_at": {
+      "type": "string",
+      "description": "Last updated timestamp in ISO-8601 format"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Metadata search tags"
+    }
+  },
+  "required": ["title", "doc_id", "version", "type"]
+}
