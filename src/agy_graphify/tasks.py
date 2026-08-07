@@ -582,6 +582,24 @@ async def dag_resume_action(*_params: str) -> None:
     )
 
 
+async def clean_logs_action(*_params: str) -> None:
+    import time
+    logger.info("Cleaning up process logs older than 7 days...")
+    telemetry_dir = Path(".gemini/telemetry")
+    if not telemetry_dir.exists():
+        return
+    
+    now = time.time()
+    seven_days_ago = now - (7 * 24 * 60 * 60)
+    count = 0
+    for log_file in telemetry_dir.glob("proc_*.log"):
+        if log_file.stat().st_mtime < seven_days_ago:
+            log_file.unlink()
+            count += 1
+    
+    logger.info(f"Cleaned up {count} old process logs.")
+
+
 async def async_main() -> None:
     """Async CLI entrypoint for task dispatcher."""
     parser = argparse.ArgumentParser(description="Flexible Async Python Task Dispatcher")
@@ -771,6 +789,8 @@ async def async_main() -> None:
     dispatcher.register("update_github_ruleset", update_github_ruleset_action)
     dispatcher.register("monitor-logs", monitor_logs_action)
     dispatcher.register("monitor_logs", monitor_logs_action)
+    dispatcher.register("clean-logs", clean_logs_action)
+    dispatcher.register("clean_logs", clean_logs_action)
     dispatcher.register("verify", verify_action)
     dispatcher.register("graphify", graph_main)
     dispatcher.register("orchestrate", orchestrate_main)
