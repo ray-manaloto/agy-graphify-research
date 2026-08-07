@@ -128,6 +128,8 @@ async def test_branch_enforcement_deny_detached_head(tmp_path, monkeypatch):
     
     import subprocess
     def mock_check_output(cmd, *args, **kwargs):
+        if "branch" in cmd:
+            return ""
         return "123456"
     monkeypatch.setattr(subprocess, "check_output", mock_check_output)
     
@@ -142,6 +144,8 @@ async def test_branch_enforcement_deny_amend_main(tmp_path, monkeypatch):
     
     import subprocess
     def mock_check_output(cmd, *args, **kwargs):
+        if "branch" in cmd:
+            return ""
         return "123456"
     monkeypatch.setattr(subprocess, "check_output", mock_check_output)
     

@@ -5,20 +5,33 @@ description: Master orchestrator skill calling repo-ingest and colibri-benchmark
 
 # Graphify Master Pipeline Orchestrator
 
-1. **Ingest & Deduplicate Repositories**:
-   - Invoke skill `repo-ingest` to fetch, deduplicate, and clone source repositories into `repos/`.
-   - Command: `uv run agy-task ingest-sources`
+This skill orchestrates the entire Graphify zero-token Colibri knowledge graph extraction pipeline. It follows a strictly layered execution architecture:
 
-2. **Execute Colibri Multi-Model Extraction**:
-   - Invoke skill `colibri-benchmark` to run deep extraction across Colibri v1.5.0 models (`glm-5.2`, `inkling`, `kimi-k3`, `deepseek-v4-flash`, `olmoe-7b`).
-   - Command: `uv run agy-task extract-colibri --model <model_name>`
+## Modular Flow Architecture
 
-3. **Grade Models via `/dag`**:
-   - Run `/dag` multi-agent review to score and rank model graph outputs:
-   - Command: `uv run agy-graph-engine --plan "Grade multi-model graph outputs"`
+1. **Modular Skill (`SKILL.md`)**: High-level natural language intent, agent guardrails, and overarching step definition.
+2. **Modular Mise Task (`.mise.toml`)**: `uv run agy-task <action>` commands that decouple the agent from brittle bash scripts, handling toolchain/dependency complexity.
+3. **Modular Python Library Modules (`src/agy_graphify/tasks.py`)**: Abstract Python implementations executed cleanly across any platform without relying on shell commands.
 
-4. **Multi-Format Fallback & 100% Coverage Verification**:
-   - Run `uv run agy-task update-all-sources` to execute `audit_graph_coverage()`.
-   - Ensure all non-code repositories (`.md`, `.json`, `.yaml`, `.sh`) receive fallback AST/structural nodes in `graphify-out/graph.json`.
-   - Assert `missing_repos_count == 0` before finalizing the extraction pipeline.
+## 1. Update and Ingest Sources
+
+Invoke the `repo-ingest` pipeline to cleanly resolve and sync source code differentials.
+
+Command:
+```bash
+uv run agy-task update-all-sources
+```
+
+## 2. Execute Zero-Token Local Extraction
+
+Trigger the fast, in-process Colibri knowledge graph extraction which outputs the `graphify-out/` DAG state.
+
+Command:
+```bash
+uv run agy-task colibri-graphify
+```
+
+## 3. Verify Output
+
+Ensure that both `graphify-out/graph.json` and `graphify-out/GRAPH_REPORT.md` are populated properly and reflect the latest source changes.
 
