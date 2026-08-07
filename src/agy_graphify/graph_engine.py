@@ -483,6 +483,9 @@ class StateGraphEngine:
             logger.error(msg)
             raise RuntimeError(msg)
 
+        from .monitor import monitor_logs
+        monitor_logs()
+
     async def _run_final_verification_gate(self) -> bool:
         """Enforce final verification gate before completing DAG workflow."""
         from .verify import EnvironmentVerifier

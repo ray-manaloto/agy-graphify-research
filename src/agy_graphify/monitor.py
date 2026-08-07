@@ -12,8 +12,9 @@ UNIVERSAL_LOG_PATH = Path(".gemini") / "telemetry" / "universal.log"
 class FailFastMonitor:
     """Scans log files for errors, warnings, and consecutive timeouts to fail fast."""
 
-    def __init__(self, max_consecutive_errors: int = 3) -> None:
+    def __init__(self, max_consecutive_errors: int = 1, allowed_patterns: list[str] | None = None) -> None:
         self.max_consecutive_errors = max_consecutive_errors
+        self.allowed_patterns = allowed_patterns or []
 
     def scan_log(self, log_path: Path | None = None, fail_on_warnings: bool = False) -> list[str]:
         target = log_path or UNIVERSAL_LOG_PATH
@@ -26,10 +27,11 @@ class FailFastMonitor:
         critical_issues: list[str] = []
         consecutive_errors = 0
 
-        operational_targets = ("colibri_extractor", "source_registry", "verify", "graph_engine", "ingest", "extract")
         for line in lines:
-            is_issue = ("ERROR" in line or "Traceback" in line or "Failed to clone" in line or (fail_on_warnings and "WARNING" in line))
-            if is_issue and "Unknown action" not in line and any(t in line for t in operational_targets):
+            if self.allowed_patterns and any(p in line for p in self.allowed_patterns):
+                continue
+            is_issue = ("ERROR" in line or "CRITICAL" in line or "Traceback" in line or "Exception" in line or "Failed to clone" in line or (fail_on_warnings and "WARNING" in line))
+            if is_issue and "Unknown action" not in line:
                 consecutive_errors += 1
                 critical_issues.append(line)
                 if consecutive_errors >= self.max_consecutive_errors:

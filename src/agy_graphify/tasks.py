@@ -33,9 +33,16 @@ class TaskDispatcher:
             raise KeyError(msg)
 
         func = self._registry[action]
-        if inspect.iscoroutinefunction(func):
-            return await func(*args, **kwargs)
-        return func(*args, **kwargs)
+        try:
+            if inspect.iscoroutinefunction(func):
+                res = await func(*args, **kwargs)
+            else:
+                res = func(*args, **kwargs)
+        finally:
+            from .monitor import monitor_logs
+            monitor_logs()
+            
+        return res
 
 
 async def graphify_setup_action(*params: str) -> None:

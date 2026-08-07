@@ -329,7 +329,7 @@ class EnvironmentVerifier:
             from .monitor import monitor_logs
             target_log = self.project_dir / ".gemini" / "telemetry" / "universal.log"
             if target_log.exists():
-                monitor_logs(log_path=target_log)
+                monitor_logs(log_path=target_log, fail_on_warnings=True)
         except SystemExit:
             res = VerificationResult(
                 decision=Decision.deny,
