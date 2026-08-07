@@ -1,0 +1,5 @@
+module hk.rules
+
+no_commit_to_branch {
+  branches = ["main", "master"]
+}

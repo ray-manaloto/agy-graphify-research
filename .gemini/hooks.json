@@ -1,0 +1,12 @@
+{
+  "hooks": [
+    {
+      "type": "BeforeTool",
+      "tool": "run_command",
+      "config": {
+        "commandPattern": "^git\\s+commit.*",
+        "description": "Intercept git commit commands targeting main across all flag variations (--amend, -m, --no-edit)."
+      }
+    }
+  ]
+}

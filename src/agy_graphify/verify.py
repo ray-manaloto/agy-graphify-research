@@ -259,6 +259,36 @@ class EnvironmentVerifier:
             )
         return violations
 
+    async def _check_branch_enforcement(self) -> list[str]:
+        violations: list[str] = []
+        import os
+        import subprocess
+        allow_main = os.environ.get("ALLOW_MAIN_COMMIT")
+        if allow_main == "1":
+            logger.warning("ALLOW_MAIN_COMMIT=1 is active: Branch protection bypassed.")
+        else:
+            try:
+                branch = subprocess.check_output(["git", "branch", "--show-current"], cwd=self.project_dir, text=True, stderr=subprocess.DEVNULL).strip()
+                if branch == "main":
+                    violations.append("Direct commit to main branch is prohibited without ALLOW_MAIN_COMMIT=1 override.")
+                elif not branch:
+                    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=self.project_dir, text=True, stderr=subprocess.DEVNULL).strip()
+                    main_sha = subprocess.check_output(["git", "rev-parse", "main"], cwd=self.project_dir, text=True, stderr=subprocess.DEVNULL).strip()
+                    if head == main_sha:
+                        violations.append("Direct commit to main branch is prohibited without ALLOW_MAIN_COMMIT=1 override.")
+            except subprocess.CalledProcessError:
+                pass
+        
+        hook_path = self.project_dir / ".git" / "hooks" / "pre-commit"
+        if (self.project_dir / ".git").exists():
+            hook_path.parent.mkdir(parents=True, exist_ok=True)
+            hook_content = "#!/bin/sh\nuv run agy-verify\n"
+            if not hook_path.exists() or hook_path.read_text() != hook_content:
+                hook_path.write_text(hook_content)
+                hook_path.chmod(0o755)
+
+        return violations
+
     async def run_check(self, use_cache: bool = True, cache_ttl: float = 60.0) -> VerificationResult:
         import time
 
@@ -272,6 +302,7 @@ class EnvironmentVerifier:
         rules_v = await self._check_project_guardrails()
         toolchain_v = await self._check_toolchain_pinning()
         sh_v = await self._check_shell_scripts()
+        branch_v = await self._check_branch_enforcement()
         forensic_v = await self.integrity_auditor.audit_codebase()
         pypi_v, pypi_status = await self._check_pypi_versions()
         github_v, github_status = await self._check_github_versions()
@@ -297,6 +328,7 @@ class EnvironmentVerifier:
             *rules_v,
             *toolchain_v,
             *sh_v,
+            *branch_v,
             *forensic_v,
             *pypi_v,
             *github_v,
