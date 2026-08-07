@@ -55,4 +55,19 @@ When ending a session or completing a major task:
 - **Target Manifest Binding**: Whenever generating or resuming a StateGraphEngine DAG (`.gemini/graph_state.json`), the target source manifest (`config/sources.json` or `extended_repo_manifest.json`) MUST be explicitly bound to the graph state.
 - **100% Repository Representation Verification**: Bounding checks MUST verify that 100% of all registered repositories in `config/sources.json` are present in `graphify-out/graph.json` before marking any DAG ingestion milestone as `completed`.
 
+---
+
+## 7. Rebase-First PR Creation & Return-to-Main Invariant
+
+- **Rebase-First Feature Branching**: All new feature branches MUST be created directly off a rebased `main` branch (`git checkout main && git pull --rebase origin main`). Never create feature branches chained off unmerged feature branches.
+- **Post-PR Workspace Return**: Immediately after staging a Pull Request via `gh pr create` or `uv run agy-task create-pr`, the workspace MUST be returned to `main` (`git checkout main`) to preserve a clean base working environment for subsequent tasks.
+
+---
+
+## 8. In-Process Colibri Graphify & Repo Ingest Standards
+
+- **Repo Ingest Skill**: Repository differential tracking and manifest updates MUST use `uv run agy-task update-all-sources` per `.agents/skills/repo_ingest/SKILL.md`.
+- **Zero-Token Graph Extraction**: Local knowledge graph updates MUST use `uv run agy-task colibri-graphify` (`ServerlessColibriRunner`) per `.agents/skills/colibri_graphify/SKILL.md`.
+
+
 

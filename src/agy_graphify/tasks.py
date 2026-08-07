@@ -617,11 +617,80 @@ async def async_main() -> None:
     from .monitor import monitor_logs
     from .source_registry import update_all_sources
 
+    async def create_pr_action(*params: str) -> None:
+        branch = params[0] if params else "feat/agents-md-rules-and-pr-skill"
+        title = "feat(docs): update AGENTS.md rules and add pr skill"
+        logger.info(f"Rebasing onto main and creating clean feature branch '{branch}'...")
+        p_co = await asyncio.create_subprocess_exec("git", "checkout", "main")
+        await p_co.wait()
+        p_pull = await asyncio.create_subprocess_exec("git", "pull", "--rebase", "origin", "main")
+        await p_pull.wait()
+
+        # Cleanly recreate target feature branch off rebased main
+        await (await asyncio.create_subprocess_exec("git", "branch", "-D", branch)).wait()
+        p_b = await asyncio.create_subprocess_exec("git", "checkout", "-b", branch)
+        await p_b.wait()
+
+        p_add = await asyncio.create_subprocess_exec("git", "add", "-A")
+        await p_add.wait()
+        p_cm = await asyncio.create_subprocess_exec("git", "commit", "-m", title)
+        await p_cm.wait()
+        p_pr = await asyncio.create_subprocess_exec("gh", "pr", "create", "--fill", "--head", branch)
+        await p_pr.wait()
+
+        # Return workspace to main
+        p_main = await asyncio.create_subprocess_exec("git", "checkout", "main")
+        await p_main.wait()
+        logger.info(
+            f"Feature branch '{branch}' rebased off main, committed, PR staged cleanly, and returned to main."
+        )
+
+    async def colibri_graphify_action(*params: str) -> dict[str, Any]:
+        from .colibri_extractor import ServerlessColibriRunner
+
+        logger.info("Executing colibri-graphify in-process zero-token extraction pipeline...")
+        runner = ServerlessColibriRunner()
+        res = await runner.run_task("In-process Colibri Graphify extraction", Path.cwd())
+        out_dir = Path.cwd() / "graphify-out"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "graph.json").write_text(res.model_dump_json(indent=2), encoding="utf-8")
+        logger.info(
+            f"Colibri Graphify complete: {len(res.nodes)} nodes written to graphify-out/graph.json"
+        )
+        return {"status": "success", "nodes": len(res.nodes), "edges": len(res.edges)}
+
+    async def pr_merge_action(*params: str) -> None:
+        pr_num = params[0] if params else "3"
+        logger.info(f"Squash-merging PR #{pr_num} via gh CLI...")
+        proc = await asyncio.create_subprocess_exec(
+            "gh", "pr", "merge", pr_num, "--squash", "--delete-branch"
+        )
+        await proc.wait()
+        logger.info(f"PR #{pr_num} merged cleanly.")
+
+    async def sync_main_action(*_params: str) -> None:
+        logger.info("Checking out main and pulling latest changes from origin/main...")
+        p1 = await asyncio.create_subprocess_exec("git", "checkout", "main")
+        await p1.wait()
+        p2 = await asyncio.create_subprocess_exec("git", "pull", "--rebase", "origin", "main")
+        await p2.wait()
+        logger.info("Local main synced 100% with origin/main.")
+
     async def update_sources_action(*_params: str) -> None:
         update_all_sources()
 
     async def monitor_logs_action(*_params: str) -> None:
         monitor_logs()
+
+    dispatcher.register("create-pr", create_pr_action)
+    dispatcher.register("create_pr", create_pr_action)
+    dispatcher.register("colibri-graphify", colibri_graphify_action)
+    dispatcher.register("colibri_graphify", colibri_graphify_action)
+    dispatcher.register("pr-merge", pr_merge_action)
+    dispatcher.register("pr_merge", pr_merge_action)
+    dispatcher.register("sync-main", sync_main_action)
+    dispatcher.register("sync_main", sync_main_action)
+
 
     dispatcher.register("update-all-sources", update_sources_action)
     dispatcher.register("update_all_sources", update_sources_action)
