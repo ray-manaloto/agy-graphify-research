@@ -76,6 +76,7 @@ When ending a session or completing a major task:
 
 - **POSIX `fcntl.flock` Atomic State Protection**: All reads and writes to `.gemini/graph_state.json` MUST use OS-level `fcntl.flock` (`LOCK_SH` for reads, `LOCK_EX` for writes) to prevent cross-process state corruption during concurrent CLI invocations.
 - **Subagent Role Dispatch Guard**: Task nodes with assigned subagent roles MUST NOT be silently marked `completed` without executing a registered handler or emitting `NODE_PENDING_SUBAGENT`. Workflows containing skipped task nodes MUST mark overall graph status as `failed`.
+- **Multiprocess Queue Safety & PID Tagging**: All Loguru log sinks MUST pass `enqueue=True` for multiprocess-safe queueing. Log format strings MUST include `PID:{process.id} ({process.name})`, and processes automatically write to isolated `.gemini/telemetry/proc_<PID>.log` sinks alongside central `universal.log`.
 
 ---
 
