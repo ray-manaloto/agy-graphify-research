@@ -1,26 +1,20 @@
-# Context Log — Project Orchestrator
+# Context Record — Orchestrator
 
-## System & Project Environment
-- Project: `agy-graphify-research`
-- Root: `/Users/rmanaloto/agy-graphify-research`
-- Orchestrator Working Dir: `/Users/rmanaloto/agy-graphify-research/.agents/orchestrator`
+## Active Task Context
+Orchestrating verification of Multi-Modal Source Architecture Proposal (`docs/graphify_sources_proposal_architecture.md`), Master Pipeline Skill (`.agents/skills/graphify_pipeline/SKILL.md`), test suite matrix (`tests/test_okf.py`, `tests/test_skill_deduplication.py`, `uv run pytest`), and environment check (`ALLOW_MAIN_COMMIT=1 uv run agy-verify`).
 
-## Target Components to Audit & Verify
-1. `src/agy_graphify/graph_engine.py`
-2. `src/agy_graphify/skillopt.py`
-3. `src/agy_graphify/okf.py`
-4. `src/agy_graphify/verify.py`
-5. `.gemini/plugins/orchestration_plugin/plugin.json`
-6. `.mise.toml`
-7. `pyproject.toml`
-8. `hk.pkl`
-9. `AGENTS.md`
+## Scope & File References
+- Proposal Spec: `/Users/rmanaloto/agy-graphify-research/docs/graphify_sources_proposal_architecture.md`
+- Master Pipeline Skill: `/Users/rmanaloto/agy-graphify-research/.agents/skills/graphify_pipeline/SKILL.md`
+- Tests: `/Users/rmanaloto/agy-graphify-research/tests/test_okf.py`, `/Users/rmanaloto/agy-graphify-research/tests/test_skill_deduplication.py`
+- Environment check command: `ALLOW_MAIN_COMMIT=1 uv run agy-verify`
+- Master Request: `/Users/rmanaloto/agy-graphify-research/.agents/ORIGINAL_REQUEST.md`
 
-## Verification Pipelines Required
-1. `uv run pytest` (expecting 23/23 tests pass)
-2. `uv run agy-task harness-validate` (expecting all 4 steps to complete successfully)
-3. `uv run agy-verify` (expecting 0 .sh scripts in core codebase, toolchain pinning verified)
-4. `uv run python3 -m agy_graphify.okf docs` (expecting doc & LESSONS.md validation pass)
-
-## Active Subagent Tasks
-- None dispatched yet.
+## Coordination Workspace Folders
+- `/Users/rmanaloto/agy-graphify-research/.agents/explorer_m1`
+- `/Users/rmanaloto/agy-graphify-research/.agents/reviewer_m1`
+- `/Users/rmanaloto/agy-graphify-research/.agents/explorer_m2`
+- `/Users/rmanaloto/agy-graphify-research/.agents/reviewer_m2`
+- `/Users/rmanaloto/agy-graphify-research/.agents/worker_m3`
+- `/Users/rmanaloto/agy-graphify-research/.agents/challenger_m3`
+- `/Users/rmanaloto/agy-graphify-research/.agents/auditor_m3`

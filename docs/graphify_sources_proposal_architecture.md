@@ -3,7 +3,7 @@ title: Graphify Source Ingestion Proposed Standard Architecture
 doc_id: okf-graphify-sources-proposal
 version: 1.1.0
 type: architecture
-status: draft
+status: approved
 author: agy-graphify
 tags:
   - graphify
@@ -16,7 +16,7 @@ tags:
 # Graphify Source Ingestion Proposed Standard Architecture
 
 ## Overview
-This specification details the proposed architecture for 100% Graphify standard alignment, multi-modal input type support (`code`, `docs`, `papers`, `video/audio`, `web`, `images`), workspace artifact cleanup, and automated 100% manifest coverage validation. Once verified and approved, this proposal will supersede [`docs/graphify_sources_current_architecture.md`](file:///Users/rmanaloto/agy-graphify-research/docs/graphify_sources_current_architecture.md).
+This specification details the active approved standard architecture for 100% Graphify standard alignment, multi-modal input type support (`code`, `docs`, `papers`, `video/audio`, `web`, `images`), workspace artifact cleanup, and automated 100% manifest coverage validation. This document is the active approved standard architecture, replacing the legacy `docs/graphify_sources_current_architecture.md`.
 
 ## Multi-Modal Input Type Support Matrix
 
@@ -92,4 +92,4 @@ flowchart TD
 ## Transition & Decommissioning Plan
 1. Apply code updates in `src/agy_graphify/tasks.py` and `tests/test_workspace_layout_standards.py`.
 2. Run full test suite (`uv run pytest`) and verify `ALLOW_MAIN_COMMIT=1 uv run agy-verify`.
-3. Upon clean verification, mark this document `status: approved` and replace `docs/graphify_sources_current_architecture.md`.
+3. Upon clean verification, mark this document `status: approved` and replace `docs/graphify_sources_current_architecture.md` (completed; this document is now the active approved standard architecture).

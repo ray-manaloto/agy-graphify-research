@@ -1,37 +1,26 @@
-## 2026-08-07T12:06:01-05:00
-You are the independent Victory Auditor for agy-graphify-research.
-The implementation team has claimed project victory on consolidating repository source ingestion and Colibri knowledge graph extraction into `graphify_pipeline` (`.agents/skills/graphify_pipeline/SKILL.md`).
+## 2026-08-07T21:32:07Z
 
-Path to ORIGINAL_REQUEST.md: `/Users/rmanaloto/agy-graphify-research/.agents/ORIGINAL_REQUEST.md` (and `/Users/rmanaloto/agy-graphify-research/ORIGINAL_REQUEST.md`).
+<USER_REQUEST>
+You are the independent Victory Auditor. Conduct a 3-phase victory audit verifying the claims made by the project team for the requirements in `/Users/rmanaloto/agy-graphify-research/.agents/ORIGINAL_REQUEST.md`.
 
-Please read `ORIGINAL_REQUEST.md` to understand the verbatim user requirements and acceptance criteria.
-Conduct a 3-phase audit:
-1. Timeline & Handoff Audit: Verify git history, modified files, and implementation timeline against claims in `.agents/orchestrator/handoff.md`.
-2. Cheating & Forensic Audit: Verify there are no mocked tests, hardcoded values, bypassed checks, suppressed lints, or illegal shell scripts (`*.sh`).
-3. Independent Verification Execution: Run tests independently (`uv run pytest`) and environment verification (`ALLOW_MAIN_COMMIT=1 uv run agy-verify`). Check that 124/124 unit tests pass and `agy-verify` returns `decision: allow`.
+Working directory for victory audit: `/Users/rmanaloto/agy-graphify-research/.agents/victory_auditor`
+Project root: `/Users/rmanaloto/agy-graphify-research`
+Original request path: `/Users/rmanaloto/agy-graphify-research/.agents/ORIGINAL_REQUEST.md`
+Orchestrator handoff path: `/Users/rmanaloto/agy-graphify-research/.agents/orchestrator/handoff.md`
 
-Check all acceptance criteria:
-- [ ] `.agents/skills/` contains zero duplicate or broken symlinks.
-- [ ] `graphify_pipeline` serves as the single master skill retaining 100% of ingestion and extraction features (`update-all-sources`, `colibri-graphify`, `Deduplicate`, `graphify-out/graph.json`, `GRAPH_REPORT.md`).
-- [ ] 124/124 unit tests pass (`uv run pytest`).
-- [ ] `ALLOW_MAIN_COMMIT=1 uv run agy-verify` returns `decision: allow`.
+Perform your 3-phase audit:
+Phase 1: Timeline & artifact verification against original request requirements (R1, R2, R3).
+Phase 2: Cheating detection, AST check, facade check, and hardcoded logic detection.
+Phase 3: Independent execution of verification commands:
+  - R1 Audit: Verify `docs/graphify_sources_proposal_architecture.md` (doc_id: okf-graphify-sources-proposal, status: draft, version: 1.1.0) explicitly details all 6 input categories:
+    1. Code Repositories (`repos/`)
+    2. Markdown & Text Docs (`docs/`, `repos/`)
+    3. PDF Papers & Books (`.pdf` in `raw/` or `graphify add <url>`)
+    4. Video & Audio (`.mp4`, `.mp3` via Whisper transcription in `raw/`)
+    5. Scraped Web URLs (`graphify add <url>` into `raw/`)
+    6. Images & Diagrams (`.png`, `.jpg`, `.svg`)
+  - R2 Audit: Verify `.agents/skills/graphify_pipeline/SKILL.md` includes explicit ingestion steps for `.pdf` papers, `.mp4`/`.mp3` media, web URLs, and git repos.
+  - R3 Audit: Run `uv run pytest tests/test_okf.py`, `uv run pytest tests/test_skill_deduplication.py`, `uv run pytest` (124 tests pass), and `ALLOW_MAIN_COMMIT=1 uv run agy-verify` (returns decision: allow).
 
-Write your detailed audit report to `.agents/victory_auditor/audit_report.md` and write your handoff report to `.agents/victory_auditor/handoff.md`.
-Your final output MUST clearly state either `VICTORY CONFIRMED` or `VICTORY REJECTED` with structured rationale.
-
-## 2026-08-07T21:12:56Z
-The Project Orchestrator has claimed victory for the project. Conduct an independent victory audit.
-
-Original Request Path: `/Users/rmanaloto/agy-graphify-research/.agents/ORIGINAL_REQUEST.md`
-Orchestrator Handoff Report Path: `/Users/rmanaloto/agy-graphify-research/.agents/orchestrator/handoff.md`
-Working Directory: `/Users/rmanaloto/agy-graphify-research/.agents/victory_auditor`
-
-Please perform your 3-phase audit:
-1. Timeline & requirements check against ORIGINAL_REQUEST.md:
-   - R1: OKF Architecture Specs (`docs/graphify_sources_current_architecture.md` with `doc_id: okf-graphify-sources-current`, `status: approved` and `docs/graphify_sources_proposal_architecture.md` with `doc_id: okf-graphify-sources-proposal`, `status: draft`) YAML frontmatter compliance and 5-phase extraction sequence diagram verification.
-   - R2: Unit test verification (`tests/test_okf.py`, `tests/test_skill_deduplication.py`, full pytest suite `uv run pytest` -> 124 tests).
-   - R3: Forensic environment verification (`ALLOW_MAIN_COMMIT=1 uv run agy-verify`, zero `.sh` shell script violations, clean logs).
-2. Anti-cheating / AST / mock detection (verify no hardcoded returns, fake assertions, or illegal shortcuts).
-3. Independent test execution: run the verification tools and test suite independently to confirm outputs.
-
-Return your verdict explicitly as either `VICTORY CONFIRMED` or `VICTORY REJECTED` along with your full structured audit report.
+Report your structured verdict (`VICTORY CONFIRMED` or `VICTORY REJECTED`) along with your full audit report to the sentinel.
+</USER_REQUEST>
