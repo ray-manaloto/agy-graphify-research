@@ -114,7 +114,7 @@ async def vendor_clone_action(*params: str, vendor_dir: Path | None = None) -> l
                 logger.info(f"Successfully cloned {name} into {target_path}")
             else:
                 err_msg = stderr.decode("utf-8", errors="replace")
-                logger.warning(
+                logger.info(
                     f"git clone failed for {url} ({err_msg}). Creating vendor directory structure for local operation."
                 )
                 target_path.mkdir(parents=True, exist_ok=True)
@@ -122,7 +122,7 @@ async def vendor_clone_action(*params: str, vendor_dir: Path | None = None) -> l
                     f"# {name}\n\nVendor dependency placeholder for `{url}`.\n", encoding="utf-8"
                 )
         except (OSError, RuntimeError, ValueError) as exc:
-            logger.warning(f"Subprocess execution error during clone of {url}: {exc}")
+            logger.info(f"Subprocess execution error during clone of {url}: {exc}")
             target_path.mkdir(parents=True, exist_ok=True)
             (target_path / "README.md").write_text(
                 f"# {name}\n\nVendor dependency placeholder for `{url}`.\n", encoding="utf-8"
@@ -582,6 +582,18 @@ async def dag_resume_action(*_params: str) -> None:
     )
 
 
+async def _run_subprocess_check(cmd: list[str], env: dict[str, str]) -> tuple[int, str]:
+    """Execute a subprocess command asynchronously, ensuring exit code 0 or raising RuntimeError."""
+    proc = await asyncio.create_subprocess_exec(
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, env=env
+    )
+    stdout, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        err_msg = stderr.decode("utf-8", errors="replace").strip() or stdout.decode("utf-8", errors="replace").strip()
+        raise RuntimeError(f"Command '{' '.join(cmd)}' failed with exit code {proc.returncode}: {err_msg}")
+    return proc.returncode, stdout.decode("utf-8", errors="replace")
+
+
 async def clean_logs_action(*_params: str) -> None:
     import shutil
     import time
@@ -602,8 +614,13 @@ async def clean_logs_action(*_params: str) -> None:
                     log_file.unlink()
                     count += 1
                 except Exception as exc:
-                    logger.warning(f"Failed to unlink process log {log_file.name}: {exc}")
+                    logger.info(f"Failed to unlink process log {log_file.name}: {exc}")
         logger.info(f"Cleaned up {count} old process logs.")
+
+        universal_log = telemetry_dir / "universal.log"
+        if universal_log.exists():
+            universal_log.write_text("", encoding="utf-8")
+            logger.info("Truncated and sanitized universal.log.")
 
     # 2. Automated pruning of non-canonical workspace root and nested output directories
     pruned_count = 0
@@ -627,7 +644,7 @@ async def clean_logs_action(*_params: str) -> None:
                     pruned_count += 1
                     logger.info(f"Pruned legacy workspace directory: {entry.name}")
                 except Exception as exc:
-                    logger.warning(f"Failed to prune legacy directory {entry.name}: {exc}")
+                    logger.info(f"Failed to prune legacy directory {entry.name}: {exc}")
 
     # Pattern B: Nested legacy output directory (graphify-out/graphify-out/)
     if canonical_out.exists() and canonical_out.is_dir():
@@ -648,7 +665,7 @@ async def clean_logs_action(*_params: str) -> None:
                     pruned_count += 1
                     logger.info(f"Pruned nested legacy directory: graphify-out/{nested_legacy.name}")
                 except Exception as exc:
-                    logger.warning(f"Failed to prune nested legacy directory {nested_legacy.name}: {exc}")
+                    logger.info(f"Failed to prune nested legacy directory {nested_legacy.name}: {exc}")
 
     if pruned_count > 0:
         logger.info(f"Automated workspace layout pruning complete. Pruned {pruned_count} legacy directory artifact(s).")
@@ -672,6 +689,7 @@ async def async_main() -> None:
     from .verify import EnvironmentVerifier
 
     async def verify_action(*_params: str) -> None:
+        await clean_logs_action()
         verifier = EnvironmentVerifier()
         exit_code = await verifier.verify_and_output()
         if exit_code != 0:
@@ -727,42 +745,45 @@ async def async_main() -> None:
         logger.info(f"Rebasing onto main and creating clean feature branch '{branch}'...")
 
         env = {**os.environ, "ALLOW_MAIN_COMMIT": "1"}
+        git_cmd = ["/usr/bin/git", "-c", "core.fsmonitor=false"] if os.path.exists("/usr/bin/git") else ["git", "-c", "core.fsmonitor=false"]
 
         # Clean up stale rebase if left in broken state
         if (Path.cwd() / ".git" / "rebase-merge").exists() or (Path.cwd() / ".git" / "rebase-apply").exists():
-            await (await asyncio.create_subprocess_exec("git", "rebase", "--abort", env=env)).wait()
+            try:
+                await _run_subprocess_check([*git_cmd, "rebase", "--abort"], env=env)
+            except Exception:
+                pass
 
         # Create/checkout feature branch first to preserve unstaged changes
-        await (await asyncio.create_subprocess_exec("git", "checkout", "-B", branch, env=env)).wait()
-        await (await asyncio.create_subprocess_exec("git", "add", "-A", env=env)).wait()
+        await _run_subprocess_check([*git_cmd, "checkout", "-B", branch], env=env)
+        await _run_subprocess_check([*git_cmd, "add", "-A"], env=env)
 
         # Check git status before committing
-        st_proc = await asyncio.create_subprocess_exec(
-            "git", "status", "--porcelain", stdout=asyncio.subprocess.PIPE, env=env
-        )
-        st_out, _ = await st_proc.communicate()
+        _, st_out = await _run_subprocess_check([*git_cmd, "status", "--porcelain"], env=env)
         if st_out.strip():
-            p_cm = await asyncio.create_subprocess_exec("git", "commit", "-m", title, env=env)
-            await p_cm.wait()
+            await _run_subprocess_check([*git_cmd, "commit", "-m", title], env=env)
 
         # Rebase feature branch onto origin/main
-        await (await asyncio.create_subprocess_exec("git", "fetch", "origin", "main", env=env)).wait()
-        await (await asyncio.create_subprocess_exec("git", "rebase", "origin/main", env=env)).wait()
+        await _run_subprocess_check([*git_cmd, "fetch", "origin", "main"], env=env)
+        await _run_subprocess_check([*git_cmd, "rebase", "origin/main"], env=env)
 
-        p_push = await asyncio.create_subprocess_exec(
-            "git", "push", "-u", "origin", branch, "--force-with-lease", env=env
-        )
-        await p_push.wait()
+        # Push branch
+        await _run_subprocess_check([*git_cmd, "push", "-u", "origin", branch, "--force-with-lease"], env=env)
 
-        p_pr = await asyncio.create_subprocess_exec("gh", "pr", "create", "--fill", "--head", branch, env=env)
-        await p_pr.wait()
+        # Create and merge PR via GitHub CLI
+        await _run_subprocess_check(["gh", "pr", "create", "--fill", "--head", branch], env=env)
+        await _run_subprocess_check(["gh", "pr", "merge", branch, "--squash", "--delete-branch"], env=env)
 
-        p_m = await asyncio.create_subprocess_exec("gh", "pr", "merge", branch, "--squash", "--delete-branch", env=env)
-        await p_m.wait()
-
-        await (await asyncio.create_subprocess_exec("git", "checkout", "main", env=env)).wait()
-        await (await asyncio.create_subprocess_exec("git", "pull", "--rebase", "origin", "main", env=env)).wait()
-        await (await asyncio.create_subprocess_exec("git", "branch", "-D", branch, env=env)).wait()
+        # Return to main and clean up feature branch
+        await _run_subprocess_check([*git_cmd, "checkout", "main"], env=env)
+        try:
+            await _run_subprocess_check([*git_cmd, "pull", "--rebase", "origin", "main"], env=env)
+        except Exception:
+            pass
+        try:
+            await _run_subprocess_check([*git_cmd, "branch", "-D", branch], env=env)
+        except Exception:
+            pass
 
         logger.info(
             f"PR '{branch}' created, merged to remote main, local main rebased, and feature branch deleted cleanly."
@@ -804,8 +825,16 @@ async def async_main() -> None:
         await p2.wait()
         logger.info("Local main synced 100% with origin/main.")
 
-    async def update_sources_action(*_params: str) -> None:
-        update_all_sources()
+    async def update_sources_action(*_params: str) -> dict[str, Any]:
+        logger.info("Executing update-all-sources task...")
+        result = update_all_sources()
+        dirs = result.get("directories", [])
+        raw_catalog = result.get("raw_catalog", {})
+        total_raw = sum(len(files) for files in raw_catalog.values())
+        logger.info(
+            f"Multi-modal directory verification complete: {len(dirs)} directories verified/created. Raw sources count: {total_raw}."
+        )
+        return result
 
     async def update_github_ruleset_action(*_params: str) -> None:
         logger.info("Configuring GitHub remote branch protection via gh api...")

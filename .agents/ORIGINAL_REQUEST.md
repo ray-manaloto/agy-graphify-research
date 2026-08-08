@@ -66,3 +66,50 @@ Integrity mode: development
 - [ ] `ALLOW_MAIN_COMMIT=1 uv run agy-verify` returns `decision: allow`.
 - [ ] Independent Victory Auditor issues `VICTORY CONFIRMED`.
 
+## Follow-up — 2026-08-07T22:18:21Z
+
+<USER_REQUEST>
+Refactor and create the Graphify sources directory layout across the workspace:
+
+1. Create canonical `raw/` multi-modal directory layout at workspace root:
+   - `raw/papers/.gitkeep` (for `.pdf` academic papers & books)
+   - `raw/media/.gitkeep` (for `.mp4`, `.mp3`, `.m4a`, `.wav` video/audio)
+   - `raw/web/.gitkeep` (for scraped web pages and HTML/markdown articles)
+   - `raw/images/.gitkeep` (for `.png`, `.jpg`, `.svg` images & diagrams)
+
+2. Update `config/sources.json`:
+   - Add explicit source path mapping:
+     ```json
+     {
+       "version": "1.1.0",
+       "updated_at": "2026-08-07T22:18:00Z",
+       "manifest_source": "graphify-out/extended_repo_manifest.json",
+       "sources": {
+         "git_repositories": "repos/",
+         "raw_papers": "raw/papers/",
+         "raw_media": "raw/media/",
+         "raw_web": "raw/web/",
+         "raw_images": "raw/images/"
+       }
+     }
+     ```
+
+3. Update `src/agy_graphify/source_registry.py` and `src/agy_graphify/tasks.py`:
+   - Enhance `SourceRegistryManager` to scan `raw/` multi-modal subdirectories alongside `repos/`.
+   - Update `update-all-sources` action to verify and auto-create `raw/` subdirectories.
+
+4. Add unit tests in `tests/test_source_registry.py` and update `tests/test_workspace_layout_standards.py`.
+
+5. Run full test suite (`uv run pytest`), verify `ALLOW_MAIN_COMMIT=1 uv run agy-verify`, and create PR to squash-merge into `main`.
+
+Working directory: `/Users/rmanaloto/agy-graphify-research`
+Integrity mode: development
+
+## Acceptance Criteria
+- [ ] `raw/` directory layout created and tracked in git.
+- [ ] `config/sources.json` registers multi-modal sources.
+- [ ] `SourceRegistryManager` scans `raw/` multi-modal files.
+- [ ] 130+ unit tests pass (`uv run pytest`).
+- [ ] `ALLOW_MAIN_COMMIT=1 uv run agy-verify` returns `decision: allow`.
+- [ ] Independent Victory Auditor issues `VICTORY CONFIRMED`.
+</USER_REQUEST>

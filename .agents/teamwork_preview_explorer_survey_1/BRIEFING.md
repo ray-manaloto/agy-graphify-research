@@ -1,34 +1,39 @@
-# BRIEFING — 2026-08-07T12:01:38Z
+# BRIEFING — 2026-08-07T22:19:05Z
 
 ## Mission
-Investigate requirement R1 (Master Skill Consolidation into `graphify_pipeline/SKILL.md`) for agy-graphify-research survey/discovery.
+Investigate SourceRegistryManager, config/sources.json, and tasks.py to provide technical analysis & recommendations for supporting raw/ multi-modal source directories.
 
 ## 🔒 My Identity
-- Archetype: Explorer 1
-- Roles: Survey/Discovery Explorer
+- Archetype: Explorer
+- Roles: Code Base Researcher
 - Working directory: /Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_1
-- Original parent: 0a2b48ec-77cc-4c36-ad37-5103b3a35ded
-- Milestone: Survey Discovery - R1 Master Skill Consolidation
+- Original parent: 97da91dd-c653-4ba7-b965-255f07ecf998
+- Milestone: Multi-Modal Source Architecture Survey
 
 ## 🔒 Key Constraints
-- Read-only investigation — do NOT implement source code changes
-- Adhere to 5-component handoff protocol
-- Write report to /Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_1/handoff.md
+- Read-only investigation — do NOT implement code changes in src/ or config/
+- Follow 5-component handoff report standard in handoff.md
+- Produce evidence-based findings with exact file paths and line numbers
 
 ## Current Parent
-- Conversation ID: 0a2b48ec-77cc-4c36-ad37-5103b3a35ded
-- Updated: 2026-08-07T12:01:38Z
+- Conversation ID: 97da91dd-c653-4ba7-b965-255f07ecf998
+- Updated: 2026-08-07T22:19:05Z
 
 ## Investigation State
-- **Explored paths**: `ORIGINAL_REQUEST.md`, `PROJECT.md`, `.agents/skills/graphify_pipeline/SKILL.md`, `.agents/skills/colibri_benchmark/SKILL.md`, `config/sources.json`, `.mise.toml`, `src/agy_graphify/tasks.py`, `src/agy_graphify/source_registry.py`, `tests/test_skill_deduplication.py`
-- **Key findings**: `.agents/skills/graphify_pipeline/SKILL.md` is fully consolidated and contains all 5 required feature keywords (`update-all-sources`, `colibri-graphify`, `Deduplicate`, `graphify-out/graph.json`, `GRAPH_REPORT.md`), matching R1 requirements and unit tests in `test_skill_deduplication.py`.
-- **Unexplored areas**: None for R1 survey scope.
+- **Explored paths**: `config/sources.json`, `src/agy_graphify/source_registry.py`, `src/agy_graphify/tasks.py`, `tests/test_tasks.py`, `tests/test_workspace_layout_standards.py`, `docs/graphify_sources_proposal_architecture.md`.
+- **Key findings**:
+  1. `config/sources.json` lacks `"sources"` object for multi-modal `raw/` subdirectories.
+  2. `SourceRegistryManager` defines `REGISTRY_FILE` constant but currently never reads or parses `config/sources.json`.
+  3. `update_all_sources()` in `source_registry.py` only performs git SHA differential sync and graph coverage audit, without auto-creating or scanning `raw/` subdirectories.
+- **Unexplored areas**: None (investigation complete).
 
 ## Key Decisions Made
-- Completed survey report in `handoff.md`.
+- Authored detailed investigation report in `handoff.md` and `hand_off.md`.
+- Outlined precise blueprints for updating `config/sources.json`, `source_registry.py`, `tasks.py`, `tests/test_source_registry.py`, and `tests/test_workspace_layout_standards.py`.
 
 ## Artifact Index
 - DISPATCH.md — Initial dispatch message
-- BRIEFING.md — Working memory and context tracking
-- progress.md — Liveness heartbeat
-- handoff.md — Final investigation report
+- BRIEFING.md — Working memory & mission state
+- progress.md — Task completion log
+- handoff.md — Detailed 5-component investigation report
+- hand_off.md — Alias copy of handoff report

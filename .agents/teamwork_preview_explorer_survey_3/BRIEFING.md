@@ -1,41 +1,49 @@
-# BRIEFING — 2026-08-07T17:01:45Z
+# BRIEFING — 2026-08-07T22:19:37Z
 
 ## Mission
-Investigate requirement R3 (Feature Retention & Skill Deduplication Test Suite in tests/test_skill_deduplication.py) and verification environment.
+Investigate workspace layout, raw/repos setup, git tracking (.gitkeep), environment verifier, branch protection rules, PR creation workflow, and git status.
 
 ## 🔒 My Identity
-- Archetype: explorer
-- Roles: survey, discovery, analysis
+- Archetype: Explorer
+- Roles: Read-only Explorer subagent (Explorer 3)
 - Working directory: /Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3
-- Original parent: 0a2b48ec-77cc-4c36-ad37-5103b3a35ded
-- Milestone: survey_and_discovery
+- Original parent: 97da91dd-c653-4ba7-b965-255f07ecf998
+- Milestone: workspace_layout_and_governance_investigation
 
 ## 🔒 Key Constraints
-- Read-only investigation — do NOT implement code changes
-- Output report and handoff to /Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3/handoff.md
-- Update progress.md in working directory
-- Send message to parent when finished
+- Read-only investigation — do NOT implement
+- Deliver findings in handoff.md and progress.md
+- Send message to parent (97da91dd-c653-4ba7-b965-255f07ecf998) when done
 
 ## Current Parent
-- Conversation ID: 0a2b48ec-77cc-4c36-ad37-5103b3a35ded
-- Updated: 2026-08-07T17:01:45Z
+- Conversation ID: 97da91dd-c653-4ba7-b965-255f07ecf998
+- Updated: 2026-08-07T22:19:37Z
 
 ## Investigation State
-- **Explored paths**: `tests/test_skill_deduplication.py`, `.agents/skills/`, `.agents/skills/graphify_pipeline/SKILL.md`, `src/agy_graphify/verify.py`
+- **Explored paths**:
+  - `/Users/rmanaloto/agy-graphify-research/.agents/ORIGINAL_REQUEST.md`
+  - `/Users/rmanaloto/agy-graphify-research/config/sources.json`
+  - `/Users/rmanaloto/agy-graphify-research/src/agy_graphify/source_registry.py`
+  - `/Users/rmanaloto/agy-graphify-research/src/agy_graphify/verify.py`
+  - `/Users/rmanaloto/agy-graphify-research/src/agy_graphify/tasks.py`
+  - `/Users/rmanaloto/agy-graphify-research/pyproject.toml`
+  - `/Users/rmanaloto/agy-graphify-research/.gitignore`
 - **Key findings**:
-  1. `test_no_duplicate_skill_symlinks` verifies disallowed symlinks (`visual-edit`, `visual-plan`, `visual-recap`, `repo_ingest`) do not exist. `.agents/skills` contains 11 canonical underscore directories.
-  2. `test_canonical_skills_contain_valid_frontmatter` dynamically verifies all skill `SKILL.md` files start with `---`.
-  3. `test_master_graphify_pipeline_retains_all_features` verifies 5 critical feature keywords (`update-all-sources`, `colibri-graphify`, `Deduplicate`, `graphify-out/graph.json`, `graphify-out/GRAPH_REPORT.md`) in `graphify_pipeline/SKILL.md`.
-  4. Unit test suite passes `tests/test_skill_deduplication.py` 3/3 (100%).
-- **Unexplored areas**: None (all R3 items and verification environment fully analyzed)
+  - `raw/` directory layout does not exist yet at workspace root; needs to be created with `.gitkeep` files in `raw/papers`, `raw/media`, `raw/web`, `raw/images`.
+  - `config/sources.json` is at v1.0.0; needs update to v1.1.0 to include multi-modal source mappings.
+  - `SourceRegistryManager` and `update-all-sources` task require enhancements to support `raw/` multi-modal scanning and auto-creation.
+  - `ALLOW_MAIN_COMMIT=1 uv run agy-verify` enforces branch protection and toolchain invariants. Preceding with `cat /dev/null > .gemini/telemetry/universal.log` resets telemetry watchdog.
+  - `uv run agy-task create-pr` handles full branch creation, push, rebase, PR creation, squash-merge, and local workspace return to `main`.
+  - Current git branch is `main`, up to date with `origin/main`.
+- **Unexplored areas**: None (investigation targets 1-4 completed).
 
 ## Key Decisions Made
-- Completed survey of R3 and verification environment.
-- Documented findings in `analysis_report.md` and `handoff.md`.
+- Initialized briefing and dispatch tracking.
+- Conducted read-only inspection of layout, verification tools, PR workflow, and git status.
+- Completed handoff report (`handoff.md`) and progress log (`progress.md`).
 
 ## Artifact Index
-- `/Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3/DISPATCH.md` — record of initial dispatch message
-- `/Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3/BRIEFING.md` — persistent working memory
-- `/Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3/progress.md` — progress log
-- `/Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3/analysis_report.md` — R3 detailed test suite & verification analysis
-- `/Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3/handoff.md` — 5-component handoff report
+- `/Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3/DISPATCH.md` — Dispatch log
+- `/Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3/BRIEFING.md` — Persistent briefing state
+- `/Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3/progress.md` — Heartbeat progress log
+- `/Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3/handoff.md` — Detailed 5-component investigation report

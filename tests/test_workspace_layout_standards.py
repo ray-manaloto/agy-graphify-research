@@ -80,3 +80,41 @@ async def test_colibri_extractor_extract_directory_multimodal(tmp_path: Path) ->
     assert isinstance(graph_data, GraphData)
     assert graph_data.metadata["total_files"] == 6
     assert len(graph_data.nodes) >= 1
+
+
+def test_raw_gitkeep_files_exist_at_workspace_root() -> None:
+    """Verify raw/papers/.gitkeep, raw/media/.gitkeep, raw/web/.gitkeep, and raw/images/.gitkeep exist at workspace root."""
+    root = Path.cwd()
+    expected_gitkeeps = [
+        root / "raw" / "papers" / ".gitkeep",
+        root / "raw" / "media" / ".gitkeep",
+        root / "raw" / "web" / ".gitkeep",
+        root / "raw" / "images" / ".gitkeep",
+    ]
+    for gitkeep in expected_gitkeeps:
+        assert gitkeep.exists(), f"Expected gitkeep file missing: {gitkeep}"
+        assert gitkeep.is_file(), f"Expected gitkeep path is not a file: {gitkeep}"
+
+
+def test_config_sources_json_multimodal_mappings() -> None:
+    """Verify config/sources.json is version 1.1.0 and contains explicit multimodal sources mappings."""
+    import json
+
+    sources_path = Path.cwd() / "config" / "sources.json"
+    assert sources_path.exists(), "config/sources.json does not exist"
+
+    data = json.loads(sources_path.read_text(encoding="utf-8"))
+    assert data.get("version") == "1.1.0", f"Expected version '1.1.0', got '{data.get('version')}'"
+
+    sources = data.get("sources", {})
+    expected_mappings = {
+        "git_repositories": "repos/",
+        "raw_papers": "raw/papers/",
+        "raw_media": "raw/media/",
+        "raw_web": "raw/web/",
+        "raw_images": "raw/images/",
+    }
+    for key, expected_val in expected_mappings.items():
+        assert key in sources, f"Missing key '{key}' in config/sources.json sources"
+        assert sources[key] == expected_val, f"Expected sources['{key}'] to be '{expected_val}', got '{sources[key]}'"
+
