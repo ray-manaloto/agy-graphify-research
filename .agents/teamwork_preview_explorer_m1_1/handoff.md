@@ -1,51 +1,89 @@
-# Handoff Report — Explorer M1.1
+# Audit Handoff Report: Requirement R1 Multi-Modal Source Architecture Proposal
 
 ## 1. Observation
-- File inspected: `docs/workflows/colibri_moe_benchmark.yaml` (lines 1–41).
-  - Contains top-level attributes: `name: colibri_moe_benchmark_workflow`, `version: 1.0.0`, `description`, `execution_mode: dag`, `max_remediations: 3`.
-  - Defines 5 nodes:
-    1. `plan_benchmark` (node_type: `task`, role: `coordinator`)
-    2. `inspect_metal_shaders` (node_type: `task`, role: `researcher`, dependencies: `[plan_benchmark]`)
-    3. `execute_benchmark_suite` (node_type: `task`, role: `developer`, dependencies: `[inspect_metal_shaders]`)
-    4. `verify_telemetry_spans` (node_type: `task`, role: `verifier`, dependencies: `[execute_benchmark_suite]`)
-    5. `qa_adversarial_review` (node_type: `task`, role: `qa_reviewer`, dependencies: `[verify_telemetry_spans]`)
-- Module inspected: `src/agy_graphify/graph_engine.py` (lines 63–99).
-  - Class `SymphonyWorkflowParser` is defined here, NOT in `src/agy_graphify/workflow_parser.py` (file `workflow_parser.py` does not exist).
-  - Underlying models defined in `src/agy_graphify/models/graph_engine_schema.py` (`SymphonyWorkflowSpec`, `SymphonyNodeSpec`, `Node`, `GraphEngineSchema`).
-- Tool execution:
-  - Executed `.venv/bin/python` script loading `colibri_moe_benchmark.yaml` via `SymphonyWorkflowParser.parse_yaml_file()`. Parsed 5 nodes cleanly into `GraphEngineSchema`.
-  - Validated DAG topological sorting via `StateGraphEngine.validate_dag()`. Returned topological order: `['plan_benchmark', 'inspect_metal_shaders', 'execute_benchmark_suite', 'verify_telemetry_spans', 'qa_adversarial_review']`.
-  - Executed `.venv/bin/pytest tests/test_graph_engine.py`. Output: `10 passed in 0.28s`.
-  - Simulated `StateGraphEngine.execute_graph()` on parsed schema. Emitted 12 lifecycle events starting from `WORKFLOW_STARTED` to `WORKFLOW_COMPLETED`.
+
+Direct inspection of `/Users/rmanaloto/agy-graphify-research/docs/graphify_sources_proposal_architecture.md` yielded the following verbatim findings:
+
+### Frontmatter Metadata (Lines 1–14)
+```yaml
+---
+title: Graphify Source Ingestion Proposed Standard Architecture
+doc_id: okf-graphify-sources-proposal
+version: 1.1.0
+type: architecture
+status: draft
+author: agy-graphify
+tags:
+  - graphify
+  - architecture
+  - proposal
+  - standards
+  - multimodal
+---
+```
+- Line 3: `doc_id: okf-graphify-sources-proposal`
+- Line 4: `version: 1.1.0`
+- Line 6: `status: draft`
+
+### 6 Multi-Modal Input Categories Matrix (Lines 25–32)
+| Input Category | Supported Extensions / Formats | Primary Storage Location | Ingestion Engine & Pipeline |
+| :--- | :--- | :--- | :--- |
+| **Code Repositories** | `.py`, `.ts`, `.go`, `.rs`, `.c`, `.java`, `.rb`, `.php`, `.swift` | `repos/` (cloned via `config/sources.json`) | AST Parser & `ColibriExtractor` (`EXTRACTED` edges) |
+| **Markdown & Docs** | `.md`, `.txt`, `.rst`, `.adoc` | `docs/`, `repos/`, `raw/` | Heading/Section Extractor (`EXTRACTED` edges) |
+| **PDF Papers & Books** | `.pdf` | `raw/` (or fetched via `graphify add <url>`) | `pdfplumber` / `pypdf` sidecar text extractor |
+| **Video & Audio** | `.mp4`, `.mp3`, `.m4a`, `.wav`, `.mkv`, `.mov`, `.webm` | `raw/` | Whisper transcription sidecar text extractor |
+| **Scraped Web URLs** | Web URLs, documentation pages, HTML articles | `raw/` (fetched via `graphify add <url>`) | HTML-to-Markdown Scraper & Entity Extractor |
+| **Images & Diagrams** | `.png`, `.jpg`, `.jpeg`, `.svg`, `.webp` | `raw/`, `repos/` | Vision OCR & Visual Relationship Extractor |
+
+### Architectural Flow & Text References
+- **Enhancements (Lines 38–40)**:
+  - Line 39: `- **Git Repositories**: Cloned into repos/ via SourceRegistryManager (uv run agy-task update-all-sources).`
+  - Line 40: `- **Raw Papers, Videos, Web URLs**: Ingested into raw/ via graphify add <url> or direct file upload, automatically processed into sidecar text nodes during colibri-graphify.`
+- **Layout Test Suite (Line 54)**:
+  - `Multi-modal file extensions (.py, .md, .pdf, .mp4, .mp3) are recognized by ColibriExtractor.`
+- **Mermaid Flowchart (Lines 64–67)**:
+  - Line 64: `A1["Git Repositories (repos/)"]`
+  - Line 65: `A2["PDF Papers (.pdf in raw/)"]`
+  - Line 66: `A3["Video/Audio (.mp4/.mp3 in raw/)"]`
+  - Line 67: `A4["Web URLs (graphify add)"]`
+
+---
 
 ## 2. Logic Chain
-1. `colibri_moe_benchmark.yaml` defines a valid 5-node linear DAG sequence without loops or cycles.
-2. `SymphonyWorkflowParser` successfully loads the YAML structure into `SymphonyWorkflowSpec` via Pydantic model validation.
-3. `SymphonyWorkflowParser.to_graph_schema()` converts the spec into a `GraphEngineSchema` object containing 5 `Node` objects.
-4. `StateGraphEngine.validate_dag()` processes the nodes via Kahn's algorithm and produces the exact linear execution sequence required by the campaign.
-5. While parsing functions perfectly, `src/agy_graphify/workflow_parser.py` is missing as an entrypoint module, and optional node fields (`inputs`, `outputs`, `retry_policy`) are omitted in the target `Node` model.
+
+1. **Frontmatter Verification**:
+   - R1 requirement dictates verifying `doc_id: okf-graphify-sources-proposal`, `status: draft`, and `version: 1.1.0`.
+   - Inspection of lines 3, 4, and 6 confirms exact matches for `doc_id`, `version`, and `status`.
+
+2. **Input Categories Coverage Verification**:
+   - **Code Repositories (`repos/`)**: Confirmed via Table Row 27, Section 1 line 39, and Mermaid node `A1` line 64.
+   - **Markdown & Text Docs (`docs/`, `repos/`)**: Confirmed via Table Row 28 (specifying `.md`, `.txt`, `.rst`, `.adoc` across `docs/`, `repos/`, `raw/`).
+   - **PDF Papers & Books (`.pdf` in `raw/` or `graphify add <url>`)**: Confirmed via Table Row 29, Section 1 line 40, Section 4 line 54, and Mermaid node `A2` line 65.
+   - **Video & Audio (`.mp4`, `.mp3` via Whisper transcription in `raw/`)**: Confirmed via Table Row 30, Section 1 line 40, Section 4 line 54, and Mermaid node `A3` line 66.
+   - **Scraped Web URLs (`graphify add <url>` into `raw/`)**: Confirmed via Table Row 31, Section 1 line 40, and Mermaid node `A4` line 67.
+   - **Images & Diagrams (`.png`, `.jpg`, `.svg`)**: Confirmed via Table Row 32 (specifying `.png`, `.jpg`, `.jpeg`, `.svg`, `.webp` in `raw/`, `repos/`).
+
+3. **Synthesis**:
+   - All 6 requested input categories are explicitly present, mapped to exact storage locations, and integrated into processing pipeline descriptions.
+
+---
 
 ## 3. Caveats
-- No live hardware execution (Apple Silicon M2 Metal compute) was performed since this investigation is read-only.
-- `inputs`, `outputs`, and `retry_policy` defined in YAML/`SymphonyNodeSpec` are dropped during conversion to `Node` objects, but this does not hinder DAG orchestration or status tracking.
+
+- This audit evaluates the documentation content of `docs/graphify_sources_proposal_architecture.md` against requirement R1.
+- Operational runtime verification of Python code execution and master skill definitions are evaluated separately under Requirements R2 and R3.
+
+---
 
 ## 4. Conclusion
-`SymphonyWorkflowParser` correctly parses `docs/workflows/colibri_moe_benchmark.yaml` into a valid `WorkflowSpec` / `GraphEngineSchema` object. The 5 nodes form a valid linear DAG without cycles. To achieve complete file structure alignment, `src/agy_graphify/workflow_parser.py` should be created as a module alias for `SymphonyWorkflowParser`.
+
+`docs/graphify_sources_proposal_architecture.md` fully satisfies Requirement R1. All frontmatter fields match the specified parameters, and all 6 input categories are detailed with explicit file extensions, storage locations, and ingestion engines.
+
+---
 
 ## 5. Verification Method
-To independently verify this investigation:
-1. Run Pytest unit tests:
-   ```bash
-   .venv/bin/pytest tests/test_graph_engine.py
-   ```
-2. Run Python workflow parse test:
-   ```bash
-   .venv/bin/python -c "
-   from pathlib import Path
-   from agy_graphify.graph_engine import SymphonyWorkflowParser, StateGraphEngine
-   schema = SymphonyWorkflowParser.parse_yaml_file(Path('docs/workflows/colibri_moe_benchmark.yaml'))
-   engine = StateGraphEngine()
-   print('Topological Order:', engine.validate_dag(schema.nodes))
-   "
-   ```
-3. Inspect `analysis.md` at: `/Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_m1_1/analysis.md`.
+
+To independently verify these findings:
+1. Run `head -n 15 /Users/rmanaloto/agy-graphify-research/docs/graphify_sources_proposal_architecture.md` to check frontmatter.
+2. Search matrix content via `sed -n '22,34p' /Users/rmanaloto/agy-graphify-research/docs/graphify_sources_proposal_architecture.md`.
+3. Invalidation condition: Any missing input category row, or mismatch in `doc_id`, `status`, or `version`.

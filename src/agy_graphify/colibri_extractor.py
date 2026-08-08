@@ -15,6 +15,24 @@ from .models.graph_schema import Edge, GraphData, Node
 class ColibriExtractor:
     """Free local LLM-powered knowledge graph extractor backed by Colibri C/Metal engine."""
 
+    SUPPORTED_EXTENSIONS: tuple[str, ...] = (
+        ".py",
+        ".md",
+        ".txt",
+        ".pdf",
+        ".mp4",
+        ".mp3",
+        ".png",
+        ".jpg",
+        ".svg",
+        ".c",
+        ".metal",
+        ".h",
+        ".js",
+        ".ts",
+        ".rs",
+    )
+
     def __init__(self, config: GraphifyConfig | None = None) -> None:
         self.config = config or GraphifyConfig.load()
         self.server_url = self.config.colibri.server_url.rstrip("/")
@@ -131,8 +149,15 @@ class ColibriExtractor:
         for line in lines:
             if line.startswith("Analyze the source file '"):
                 file_name = line.split("'")[1]
-                if file_name.endswith(".md"):
+                suffix = Path(file_name).suffix.lower()
+                if suffix in (".md", ".txt"):
                     file_type = "doc"
+                elif suffix == ".pdf":
+                    file_type = "paper"
+                elif suffix in (".mp4", ".mp3"):
+                    file_type = "media"
+                elif suffix in (".png", ".jpg", ".svg"):
+                    file_type = "image"
                 break
 
         file_node_id = file_name.lower().replace(".", "_").replace("-", "_")
@@ -221,7 +246,7 @@ class ColibriExtractor:
     async def extract_directory(
         self,
         dir_path: Path,
-        extensions: tuple[str, ...] = (".py", ".md", ".c", ".metal", ".h", ".js", ".ts", ".rs"),
+        extensions: tuple[str, ...] = SUPPORTED_EXTENSIONS,
     ) -> GraphData:
         """Extract knowledge graph across all supported files in a directory."""
         if not dir_path.is_dir():
@@ -232,7 +257,7 @@ class ColibriExtractor:
             for p in dir_path.rglob("*")
             if p.is_file()
             and p.suffix.lower() in extensions
-            and "graphify-out" not in p.parts
+            and not any(part.startswith("graphify-out") for part in p.parts)
             and ".venv" not in p.parts
         ]
 

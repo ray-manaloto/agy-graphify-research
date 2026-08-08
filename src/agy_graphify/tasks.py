@@ -583,21 +583,75 @@ async def dag_resume_action(*_params: str) -> None:
 
 
 async def clean_logs_action(*_params: str) -> None:
+    import shutil
     import time
-    logger.info("Cleaning up process logs older than 7 days...")
-    telemetry_dir = Path(".gemini/telemetry")
-    if not telemetry_dir.exists():
-        return
-    
-    now = time.time()
-    seven_days_ago = now - (7 * 24 * 60 * 60)
-    count = 0
-    for log_file in telemetry_dir.glob("proc_*.log"):
-        if log_file.stat().st_mtime < seven_days_ago:
-            log_file.unlink()
-            count += 1
-    
-    logger.info(f"Cleaned up {count} old process logs.")
+    from pathlib import Path
+
+    root_dir = Path.cwd().resolve()
+
+    # 1. Process log cleanup in .gemini/telemetry
+    telemetry_dir = root_dir / ".gemini" / "telemetry"
+    if telemetry_dir.exists():
+        logger.info("Cleaning up process logs older than 7 days...")
+        now = time.time()
+        seven_days_ago = now - (7 * 24 * 60 * 60)
+        count = 0
+        for log_file in telemetry_dir.glob("proc_*.log"):
+            if log_file.stat().st_mtime < seven_days_ago:
+                try:
+                    log_file.unlink()
+                    count += 1
+                except Exception as exc:
+                    logger.warning(f"Failed to unlink process log {log_file.name}: {exc}")
+        logger.info(f"Cleaned up {count} old process logs.")
+
+    # 2. Automated pruning of non-canonical workspace root and nested output directories
+    pruned_count = 0
+    canonical_out = (root_dir / "graphify-out").resolve()
+
+    # Pattern A: Non-canonical workspace root directories matching graphify-out* (e.g. graphify-out-antigravity/)
+    for entry in root_dir.glob("graphify-out*"):
+        if entry.is_dir() and entry.name != "graphify-out":
+            resolved = entry.resolve()
+            # Safety guards:
+            # - resolved path inside workspace root
+            # - resolved path != workspace root
+            # - resolved path != canonical output dir
+            if (
+                root_dir in resolved.parents
+                and resolved != root_dir
+                and resolved != canonical_out
+            ):
+                try:
+                    shutil.rmtree(entry)
+                    pruned_count += 1
+                    logger.info(f"Pruned legacy workspace directory: {entry.name}")
+                except Exception as exc:
+                    logger.warning(f"Failed to prune legacy directory {entry.name}: {exc}")
+
+    # Pattern B: Nested legacy output directory (graphify-out/graphify-out/)
+    if canonical_out.exists() and canonical_out.is_dir():
+        nested_legacy = canonical_out / "graphify-out"
+        if nested_legacy.exists() and nested_legacy.is_dir():
+            resolved_nested = nested_legacy.resolve()
+            # Safety guards:
+            # - resolved path inside workspace root
+            # - resolved path != workspace root
+            # - resolved path != canonical output dir
+            if (
+                root_dir in resolved_nested.parents
+                and resolved_nested != root_dir
+                and resolved_nested != canonical_out
+            ):
+                try:
+                    shutil.rmtree(nested_legacy)
+                    pruned_count += 1
+                    logger.info(f"Pruned nested legacy directory: graphify-out/{nested_legacy.name}")
+                except Exception as exc:
+                    logger.warning(f"Failed to prune nested legacy directory {nested_legacy.name}: {exc}")
+
+    if pruned_count > 0:
+        logger.info(f"Automated workspace layout pruning complete. Pruned {pruned_count} legacy directory artifact(s).")
 
 
 async def async_main() -> None:
