@@ -1,19 +1,15 @@
-## 2026-08-07T17:00:57Z
-
+## 2026-08-07T22:18:42Z
 <USER_REQUEST>
-You are Explorer 3 for survey/discovery on agy-graphify-research.
+You are a read-only Explorer subagent (Explorer 3).
 Working directory: /Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3
+Original Request Path: /Users/rmanaloto/agy-graphify-research/.agents/ORIGINAL_REQUEST.md
 
-Objective:
-Investigate requirements R3 (Feature Retention & Skill Deduplication Test Suite in `tests/test_skill_deduplication.py`) and verification environment.
-Read `/Users/rmanaloto/agy-graphify-research/.agents/ORIGINAL_REQUEST.md` and `/Users/rmanaloto/agy-graphify-research/PROJECT.md`.
-Inspect `tests/test_skill_deduplication.py` and any related test files under `tests/`.
-Analyze current unit test assertions for:
-1. Zero duplicate or broken symlink files.
-2. Valid YAML frontmatter headers across all skill `SKILL.md` files.
-3. Feature keyword presence (`update-all-sources`, `colibri-graphify`, `Deduplicate`, `graphify-out/graph.json`, `GRAPH_REPORT.md`) in `graphify_pipeline/SKILL.md`.
+Your task:
+1. Read /Users/rmanaloto/agy-graphify-research/.agents/ORIGINAL_REQUEST.md.
+2. Investigate the workspace layout, current `raw/` or `repos/` setup, git tracking requirements (.gitkeep files).
+3. Investigate environment verifier (`ALLOW_MAIN_COMMIT=1 uv run agy-verify`), branch protection rules, and PR creation workflow (`uv run agy-task create-pr` or `pr` skill).
+4. Verify current git status and branch setup (`git status`, `git branch`).
 
-Write your analysis report and handoff to `/Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_3/handoff.md`.
-Update `progress.md` in your directory.
-Send a message to parent when finished referencing your handoff file.
+Write your detailed investigation report to `.agents/teamwork_preview_explorer_survey_3/handoff.md` and `.agents/teamwork_preview_explorer_survey_3/progress.md`.
+Send a message back when done.
 </USER_REQUEST>

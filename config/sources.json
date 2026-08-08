@@ -1,5 +1,12 @@
 {
-  "version": "1.0.0",
-  "updated_at": "2026-08-06T17:38:00Z",
-  "manifest_source": "graphify-out/extended_repo_manifest.json"
+  "version": "1.1.0",
+  "updated_at": "2026-08-07T22:18:00Z",
+  "manifest_source": "graphify-out/extended_repo_manifest.json",
+  "sources": {
+    "git_repositories": "repos/",
+    "raw_papers": "raw/papers/",
+    "raw_media": "raw/media/",
+    "raw_web": "raw/web/",
+    "raw_images": "raw/images/"
+  }
 }

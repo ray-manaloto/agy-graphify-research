@@ -1,13 +1,16 @@
-## 2026-08-07T17:00:57Z
-You are Explorer 2 for survey/discovery on agy-graphify-research.
+## 2026-08-07T22:18:42Z
+<USER_REQUEST>
+You are a read-only Explorer subagent (Explorer 2).
 Working directory: /Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_2
+Original Request Path: /Users/rmanaloto/agy-graphify-research/.agents/ORIGINAL_REQUEST.md
 
-Objective:
-Investigate requirements R2 (Zero Duplicate Symlinks or Broken Skills in `.agents/skills/`).
-Read `/Users/rmanaloto/agy-graphify-research/.agents/ORIGINAL_REQUEST.md` and `/Users/rmanaloto/agy-graphify-research/PROJECT.md`.
-Inspect the entire `.agents/skills/` directory structure. Identify all subdirectories, symlinks, broken symlinks (specifically check `visual-edit`, `visual-plan`, `visual-recap`), hyphen vs underscore directory duplicates, and canonical underscore directories.
-Detail which symlinks or directories exist, which are broken/duplicate, and what exact cleanup steps are required to leave only clean canonical underscore directories.
+Your task:
+1. Read /Users/rmanaloto/agy-graphify-research/.agents/ORIGINAL_REQUEST.md.
+2. Investigate test suite: `tests/test_source_registry.py`, `tests/test_workspace_layout_standards.py`, and `docs/graphify_sources_proposal_architecture.md`.
+3. Examine existing tests in `tests/test_source_registry.py` and `tests/test_workspace_layout_standards.py`.
+4. Determine what test cases currently exist, how `SourceRegistryManager` and workspace layout standards are tested, and what new test assertions are required for multi-modal `raw/` sources.
+5. Run tests if needed (`uv run pytest`) and note total count and pass/fail state.
 
-Write your analysis report and handoff to `/Users/rmanaloto/agy-graphify-research/.agents/teamwork_preview_explorer_survey_2/handoff.md`.
-Update `progress.md` in your directory.
-Send a message to parent when finished referencing your handoff file.
+Write your detailed investigation report to `.agents/teamwork_preview_explorer_survey_2/handoff.md` and `.agents/teamwork_preview_explorer_survey_2/progress.md`.
+Send a message back when done.
+</USER_REQUEST>

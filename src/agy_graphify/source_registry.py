@@ -20,8 +20,83 @@ REPOS_BASE = Path("repos")
 class SourceRegistryManager:
     """Manages git repository updates, commit SHA state, delta tracking, and graph coverage auditing."""
 
-    def __init__(self) -> None:
+    def __init__(self, config_path: Path | None = None) -> None:
+        self.config_path = config_path or REGISTRY_FILE
+        self.sources_config: dict[str, str] = self._load_sources_config()
         self.state: dict[str, str] = self._load_state()
+
+    def _load_sources_config(self) -> dict[str, str]:
+        """Load and parse sources configuration from config/sources.json."""
+        if self.config_path.exists():
+            try:
+                data = json.loads(self.config_path.read_text(encoding="utf-8"))
+                return data.get("sources", {})
+            except Exception as e:
+                logger.warning(f"Could not load sources config from {self.config_path}: {e}")
+        return {}
+
+    def ensure_source_directories(self, base_dir: Path | None = None) -> list[Path]:
+        """Verify and auto-create missing subdirectories and place .gitkeep files if missing."""
+        root = base_dir or Path.cwd()
+        default_subdirs = [
+            "repos",
+            "raw/papers",
+            "raw/media",
+            "raw/web",
+            "raw/images",
+        ]
+
+        subdirs_set: set[str] = set(default_subdirs)
+        if self.sources_config:
+            for sub_path in self.sources_config.values():
+                clean_path = sub_path.strip("/")
+                if clean_path:
+                    subdirs_set.add(clean_path)
+
+        verified_dirs: list[Path] = []
+        for subpath in sorted(subdirs_set):
+            dir_path = root / subpath
+            dir_path.mkdir(parents=True, exist_ok=True)
+            gitkeep_file = dir_path / ".gitkeep"
+            if not gitkeep_file.exists():
+                gitkeep_file.touch()
+            verified_dirs.append(dir_path)
+
+        logger.info(f"Verified/created {len(verified_dirs)} source subdirectories with .gitkeep files.")
+        return verified_dirs
+
+    def scan_raw_sources(self, base_dir: Path | None = None) -> dict[str, list[Path]]:
+        """Scan multi-modal subdirectories for specified extensions and return catalog dict."""
+        root = base_dir or Path.cwd()
+        target_exts = {".pdf", ".mp4", ".mp3", ".m4a", ".wav", ".html", ".md", ".png", ".jpg", ".svg"}
+
+        raw_categories = {
+            "raw_papers": root / "raw" / "papers",
+            "raw_media": root / "raw" / "media",
+            "raw_web": root / "raw" / "web",
+            "raw_images": root / "raw" / "images",
+        }
+
+        if self.sources_config:
+            for key, path_str in self.sources_config.items():
+                if key != "git_repositories":
+                    raw_categories[key] = root / path_str.strip("/")
+
+        catalog: dict[str, list[Path]] = {}
+        total_files = 0
+
+        for cat_name, cat_dir in raw_categories.items():
+            matched_files: list[Path] = []
+            if cat_dir.exists():
+                for item in cat_dir.rglob("*"):
+                    if item.is_file() and item.name != ".gitkeep" and item.suffix.lower() in target_exts:
+                        matched_files.append(item)
+            matched_files.sort()
+            catalog[cat_name] = matched_files
+            total_files += len(matched_files)
+
+        logger.info(f"Scanned raw sources: cataloged {total_files} file(s) across {len(catalog)} raw categories.")
+        return catalog
 
     def _load_state(self) -> dict[str, str]:
         if STATE_FILE.exists():
@@ -114,11 +189,19 @@ class SourceRegistryManager:
         return missing
 
 
-def update_all_sources() -> None:
+def update_all_sources(base_dir: Path | None = None) -> dict[str, Any]:
     """CLI Entrypoint to sync repositories, update commit SHA differential state, and audit graph coverage."""
     mgr = SourceRegistryManager()
-    mgr.sync_and_get_deltas()
-    mgr.audit_graph_coverage()
+    dirs = mgr.ensure_source_directories(base_dir=base_dir)
+    raw_catalog = mgr.scan_raw_sources(base_dir=base_dir)
+    deltas = mgr.sync_and_get_deltas()
+    missing = mgr.audit_graph_coverage()
+    return {
+        "directories": dirs,
+        "raw_catalog": raw_catalog,
+        "deltas": deltas,
+        "missing": missing,
+    }
 
 
 __all__ = ["SourceRegistryManager", "update_all_sources"]
