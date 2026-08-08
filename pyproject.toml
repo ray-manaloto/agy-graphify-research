@@ -31,6 +31,9 @@ agy-graph-engine = "agy_graphify.graph_engine:main"
 agy-dag = "agy_graphify.graph_engine:main"
 agy-skillopt = "agy_graphify.skillopt:main"
 
+[tool.uv]
+cache-dir = ".uv-cache"
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100

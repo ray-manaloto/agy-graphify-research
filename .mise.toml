@@ -6,6 +6,7 @@ auto_install = true
 PYTHONPATH = "src"
 AGY_PROJECT_MODE = "isolated"
 PHOENIX_WORKING_DIR = ".gemini/phoenix"
+UV_CACHE_DIR = ".uv-cache"
 
 [tools]
 python = "3.14.7"
